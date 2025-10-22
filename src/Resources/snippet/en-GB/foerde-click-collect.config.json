@@ -4,9 +4,8 @@
       "cardTitle": "Click & Collect Settings",
       "pickupWindowDaysLabel": "Pickup window in days",
       "pickupWindowDaysHelp": "Define how many full days customers have to collect their order (default 2).",
-      "pickupExpiryOverrideLabel": "Pickup expiry override (days)",
-      "pickupExpiryOverrideHelp": "Optional override for the pickup expiry period; leave empty to rely on the pickup window.",
-      "pickupExpiryOverridePlaceholder": "Leave empty to reuse the pickup window value"
+      "pickupReadyHoursLabel": "Pickup preparation time (hours)",
+      "pickupReadyHoursHelp": "Number of hours staff typically need before marking an order ready (default 4)."
     }
   }
 }

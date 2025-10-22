@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<config xmlns="urn:shopware:config:1.0">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/master/src/Core/System/SystemConfig/Schema/config.xsd">
     <card>
         <title>foerde-click-collect.config.cardTitle</title>
         <input-field type="int">
@@ -11,13 +12,12 @@
             <step>1</step>
         </input-field>
         <input-field type="int">
-            <name>pickupExpiryOverrideDays</name>
-            <label>foerde-click-collect.config.pickupExpiryOverrideLabel</label>
-            <helpText>foerde-click-collect.config.pickupExpiryOverrideHelp</helpText>
-            <placeholder>foerde-click-collect.config.pickupExpiryOverridePlaceholder</placeholder>
+            <name>pickupReadyHours</name>
+            <label>foerde-click-collect.config.pickupReadyHoursLabel</label>
+            <helpText>foerde-click-collect.config.pickupReadyHoursHelp</helpText>
+            <defaultValue>4</defaultValue>
             <min>1</min>
             <step>1</step>
-            <allowEmpty>true</allowEmpty>
         </input-field>
     </card>
 </config>
