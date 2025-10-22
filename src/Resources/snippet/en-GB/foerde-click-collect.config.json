@@ -1,11 +1,11 @@
 {
   "foerde-click-collect": {
     "config": {
-      "cardTitle": "Click & Collect Settings",
-      "pickupWindowDaysLabel": "Pickup window in days",
-      "pickupWindowDaysHelp": "Define how many full days customers have to collect their order (default 2).",
-      "pickupReadyHoursLabel": "Pickup preparation time (hours)",
-      "pickupReadyHoursHelp": "Number of hours staff typically need before marking an order ready (default 4)."
+      "cardTitle": "Click & Collect",
+      "pickupWindowDaysLabel": "Pickup window (days)",
+      "pickupWindowDaysHelp": "Controls how many full days you hold the order before it expires and reminder emails stop (default 2).",
+      "pickupReadyHoursLabel": "Preparation time until ready (hours)",
+      "pickupReadyHoursHelp": "Sets the expected preparation time communicated to customers before the ready-for-pickup email is sent (default 4)."
     }
   }
 }

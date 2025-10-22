@@ -1,11 +1,11 @@
 {
   "foerde-click-collect": {
     "config": {
-      "cardTitle": "Click & Collect Einstellungen",
-      "pickupWindowDaysLabel": "Abholfrist in Tagen",
-      "pickupWindowDaysHelp": "Legt fest, wie viele volle Tage Kundinnen und Kunden zur Abholung haben (Standard 2).",
-      "pickupReadyHoursLabel": "Vorbereitungszeit bis Abholbereit (Stunden)",
-      "pickupReadyHoursHelp": "Übliche Anzahl Stunden, bis das Team die Bestellung als abholbereit markiert (Standard 4)."
+  "cardTitle": "Click & Collect",
+  "pickupWindowDaysLabel": "Abholfrist (Tage)",
+  "pickupWindowDaysHelp": "Legt fest, wie viele volle Tage die Bestellung zur Abholung bereitliegt, bevor sie als abgelaufen gilt und Erinnerungen enden (Standard 2).",
+  "pickupReadyHoursLabel": "Vorbereitungszeit bis Abholbereit (Stunden)",
+  "pickupReadyHoursHelp": "Gibt an, wie viele Stunden das Team üblicherweise benötigt, bevor die Abholbenachrichtigung verschickt wird (Standard 4)."
     }
   }
 }
