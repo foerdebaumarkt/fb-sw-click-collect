@@ -2,19 +2,24 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/master/src/Core/System/SystemConfig/Schema/config.xsd">
     <card>
-        <title>foerde-click-collect.config.cardTitle</title>
+        <title lang="en-GB">Click &amp; Collect</title>
+        <title lang="de-DE">Click &amp; Collect</title>
         <input-field type="int">
             <name>pickupWindowDays</name>
-            <label>foerde-click-collect.config.pickupWindowDaysLabel</label>
-            <helpText>foerde-click-collect.config.pickupWindowDaysHelp</helpText>
+            <label lang="en-GB">Pickup window (days)</label>
+            <label lang="de-DE">Abholzeitraum (Tage)</label>
+            <helpText lang="en-GB">Controls how many full days you hold the order before it expires and reminder emails stop (default 2).</helpText>
+            <helpText lang="de-DE">Legt fest, wie viele volle Tage die Bestellung bereitliegt, bevor sie abläuft und Erinnerungs-E-Mails beendet werden (Standard 2).</helpText>
             <defaultValue>2</defaultValue>
             <min>1</min>
             <step>1</step>
         </input-field>
         <input-field type="int">
             <name>pickupReadyHours</name>
-            <label>foerde-click-collect.config.pickupReadyHoursLabel</label>
-            <helpText>foerde-click-collect.config.pickupReadyHoursHelp</helpText>
+            <label lang="en-GB">Preparation time until ready (hours)</label>
+            <label lang="de-DE">Vorbereitung bis abholbereit (Stunden)</label>
+            <helpText lang="en-GB">Sets the expected preparation time communicated to customers before the ready-for-pickup email is sent (default 4).</helpText>
+            <helpText lang="de-DE">Legt die erwartete Vorbereitungszeit fest, die Kunden vor Versand der Abholbenachrichtigung kommuniziert wird (Standard 4).</helpText>
             <defaultValue>4</defaultValue>
             <min>1</min>
             <step>1</step>
