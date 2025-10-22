@@ -1,0 +1,12 @@
+{
+  "foerde-click-collect": {
+    "config": {
+      "cardTitle": "Click & Collect Einstellungen",
+      "pickupWindowDaysLabel": "Abholfrist in Tagen",
+      "pickupWindowDaysHelp": "Legt fest, wie viele volle Tage Kundinnen und Kunden zur Abholung haben (Standard 2).",
+      "pickupExpiryOverrideLabel": "Abholfrist-Override (Tage)",
+      "pickupExpiryOverrideHelp": "Optionaler Wert, der die Abholfrist überschreibt; freilassen, um die Standardfrist zu verwenden.",
+      "pickupExpiryOverridePlaceholder": "Leer lassen, um die Standardfrist zu nutzen"
+    }
+  }
+}
