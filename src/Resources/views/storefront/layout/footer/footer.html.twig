@@ -1,0 +1,25 @@
+{% sw_extends '@Storefront/storefront/layout/footer/footer.html.twig' %}
+
+{#
+  Adjust VAT/shipping notice when Click & Collect is selected: remove the shipping cost part.
+#}
+{% block layout_footer_vat %}
+    {% set isClickCollect = context.shippingMethod is defined and context.shippingMethod and context.shippingMethod.technicalName == 'click_collect' %}
+    {% set cmsPath = 'frontend.cms.page.full' %}
+
+    {% if showVatNotice or showVatNotice is not defined %}
+        <div class="footer-vat">
+            {% if isClickCollect %}
+                <p>Alle Preise inkl. gesetzl. Mehrwertsteuer.</p>
+            {% else %}
+                {% set shippingSnippetKey = context.taxState == 'gross' ? 'footer.includeVatTextPage' : 'footer.excludeVatTextPage' %}
+                <p>
+                    {{ shippingSnippetKey|trans({
+                        '%url%': path(cmsPath, { id: config('core.basicInformation.shippingPaymentInfoPage') }),
+                        '%star%': ''
+                    })|raw }}
+                </p>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}

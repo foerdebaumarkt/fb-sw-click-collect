@@ -11,7 +11,7 @@ This plan assumes Shopware 6.7 CE as the baseline and follows the guidance from 
 ## 2. Data Model & Install Logic
 
 - No additional persistence beyond core entities: use the dedicated click & collect shipping method plus delivery state to identify orders—no custom fields or tables required.
-- Register the click & collect shipping method (`Foerde Click & Collect`) during plugin install/activate with type `pickup` and standard delivery time; link to all sales channels.
+- [x] Register the click & collect shipping method (display name "Abholung im Markt") during plugin install/activate with technical_name `click_collect`, standard delivery time, zero price, and link to all storefront sales channels. (DONE)
 
 ## 3. Checkout & Storefront Adjustments
 
@@ -22,6 +22,8 @@ This plan assumes Shopware 6.7 CE as the baseline and follows the guidance from 
 ## 4. Payment Restriction & Order Tagging
 
 - Decorate `PaymentMethodRoute` to filter methods down to offline “Pay in store” option when click & collect shipping is active; ensure fallback if method disabled.
+- Create a dedicated payment method “Bezahlung im Markt” (technical_name `click_collect`) with a synchronous offline handler (no redirect/capture), activate it, and assign it to all storefront sales channels.
+- Restrict availability by shipping: add a Rule that allows this payment method only when the shipping method is `click_collect` and assign it via `availabilityRuleId`; if it’s the only available method, it should be preselected automatically.
 - On `CheckoutOrderPlacedEvent`, assert the click & collect shipping method is locked in, optionally add an order tag for reporting, and keep Shopware transactions untouched for in-store payment.
 - Skip payment capture by ensuring chosen payment method is manual and leaving transaction as `open`.
 
@@ -52,21 +54,36 @@ This plan assumes Shopware 6.7 CE as the baseline and follows the guidance from 
 ## 9. Milestones
 
 1. **Foundation**: skeleton, migration scaffolding, shipping method creation, manual verification.
-2. **Checkout**: storefront template adjustments, event subscribers, payment filter, data persistence, unit tests.
-3. **Lifecycle & Admin**: state management, delivery-state actions in the existing admin view, notifications.
-4. **Messaging**: email templates, scheduled tasks, staff notification pipeline.
-5. **QA & Docs**: automated tests, README updates, release preparation.
+   - Shipping method creation and manual verification — DONE
+1. **Checkout**: storefront template adjustments, event subscribers, payment filter, data persistence, unit tests.
+   - Implemented so far (DONE): Payment method provisioning with custom handler and availability rule; storefront tweaks to hide shipping costs, hide addresses on confirm, show shipping description, and adjust footer VAT text when Click & Collect is active.
+1. **Lifecycle & Admin**: state management, delivery-state actions in the existing admin view, notifications.
+1. **Messaging**: email templates, scheduled tasks, staff notification pipeline.
+1. **QA & Docs**: automated tests, README updates, release preparation.
 
 ## 10. Implementation Steps & Checkpoints
 
 1. **Plugin bootstrap**: Scaffold the plugin, register services.xml, composer autoloading, and activation hooks. Checkpoint: install and activate the plugin in a dev shop, confirm the plugin appears with its system config section and no errors in the logs.
-2. **Shipping method provisioning**: Implement install/activate logic that creates and links the click & collect shipping method. Checkpoint: after reinstall, verify in the admin shipping overview and storefront checkout that the new method is selectable.
-3. **Checkout enforcement**: Add event subscribers and route decorators to auto-select the pickup method and lock payment to “Pay in store.” Checkpoint: run through checkout manually to ensure the method cannot be deselected and the correct payment option remains.
-4. **Storefront messaging**: Extend confirm page Twig and provide static store card information. Checkpoint: reload the confirm page and confirm the pickup instructions render with configured data.
-5. **Lifecycle wiring**: Register delivery state machine extensions and expose transitions in the admin order detail view. Checkpoint: place a test order, open it in admin, and walk states through pending → ready → picked to confirm transitions exist and history logs correctly.
-6. **Notifications & reminders**: Implement messenger message for staff email, ready-for-pickup trigger, and scheduled task for reminders. Checkpoint: use the Mail Preview or log to confirm template rendering on state change, and run the scheduled task manually (`bin/console scheduled-task:run`) to see reminder dispatches.
-7. **Customer surfaces**: Update storefront account order history and ensure reminder/pickup status appears. Checkpoint: log in as the test customer to confirm statuses and messaging.
-8. **Automated and manual QA**: Add unit/integration tests, smoke through checkout once more, and update README with enablement steps. Checkpoint: run the `ci: lint+type+test` task and document manual validation steps before promoting the build.
+1. [x] **Shipping method provisioning** — DONE: Implemented install/activate logic that creates and links the click & collect shipping method (technical_name `click_collect`), ensures a standard delivery time, and links to all storefront sales channels. Note: this method represents store pickup (no delivery), so shipping cost must be hidden in UI, not shown as 0.
+1. [x] **Payment method provisioning** — DONE: Implemented a synchronous offline payment handler and upserted the payment method (technical_name `click_collect`, name “Bezahlung im Markt”), assigned an availability rule limited to the Click & Collect shipping method (using operator `=`), and attached it to all storefront sales channels. When it’s the only available method, it’s preselected automatically by Shopware.
+1. **Checkout enforcement**: Add event subscribers and route decorators to auto-select the pickup method and lock payment to “Pay in store.”
+   - [ ] Auto-select `click_collect` shipping method on cart recalculation; prevent deselection via route decorator or JS.
+   - [x] Availability is restricted via rule, so only the offline payment shows when `click_collect` is active.
+   - [x] Hide shipping/delivery cost rows in the UI because there is no delivery for `click_collect`.
+   - Checkpoint: run through checkout manually to ensure the method cannot be deselected, the correct payment option remains, and no shipping/delivery cost row is rendered.
+1. **Storefront messaging**:
+   - [x] Add pickup note on the confirm page when `click_collect` is selected.
+   - [x] Always render the shipping description under the shipping method name in the list.
+   - [x] Hide shipping cost line in the order summary for `click_collect`.
+   - [x] Hide Lieferadresse and Rechnungsadresse on the confirm page when `click_collect` is active.
+   - [x] Simplify footer notice for `click_collect` to: “Alle Preise inkl. gesetzl. Mehrwertsteuer.”
+   - [ ] Provide a static store card (name, address, opening hours) from plugin config.
+   - [ ] Suppress any remaining delivery-time UI blocks where applicable.
+   - Checkpoint: reload the confirm page and confirm the pickup instructions render with configured data and shipping cost is not displayed.
+1. **Lifecycle wiring**: Register delivery state machine extensions and expose transitions in the admin order detail view. Checkpoint: place a test order, open it in admin, and walk states through pending → ready → picked to confirm transitions exist and history logs correctly.
+1. **Notifications & reminders**: Implement messenger message for staff email, ready-for-pickup trigger, and scheduled task for reminders. Checkpoint: use the Mail Preview or log to confirm template rendering on state change, and run the scheduled task manually (`bin/console scheduled-task:run`) to see reminder dispatches.
+1. **Customer surfaces**: Update storefront account order history and ensure reminder/pickup status appears. Checkpoint: log in as the test customer to confirm statuses and messaging.
+1. **Automated and manual QA**: Add unit/integration tests, smoke through checkout once more, and update README with enablement steps. Checkpoint: run the `ci: lint+type+test` task and document manual validation steps before promoting the build.
 
 ## 11. Open Questions
 

@@ -1,0 +1,14 @@
+{% sw_extends '@Storefront/storefront/component/shipping/shipping-method.html.twig' %}
+
+{#
+  Show the shipping method description under the name for all methods (not only the selected one),
+  similar to how payment method descriptions are displayed.
+#}
+{% block component_shipping_method_description %}
+    <div class="shipping-method-description">
+        <strong>{{ shipping.translated.name }}</strong>
+        {% if shipping.translated.description %}
+            <p class="mb-0 text-muted small">{{ shipping.translated.description|raw }}</p>
+        {% endif %}
+    </div>
+{% endblock %}

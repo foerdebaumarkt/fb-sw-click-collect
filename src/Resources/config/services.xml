@@ -4,6 +4,9 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
     <services>
         <defaults autowire="true" autoconfigure="true" public="false"/>
-        <!-- Services will be registered in upcoming implementation steps. -->
+        <!-- Payment handler for Click & Collect (offline, synchronous) -->
+        <service id="FoerdeClickCollect\Service\Payment\ClickCollectPaymentHandler">
+            <tag name="shopware.payment.method"/>
+        </service>
     </services>
 </container>

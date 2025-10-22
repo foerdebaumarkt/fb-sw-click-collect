@@ -1,0 +1,29 @@
+{% sw_extends '@Storefront/storefront/page/checkout/summary/summary-shipping.html.twig' %}
+
+{#
+  Hide shipping cost row for Click & Collect (technical_name = click_collect).
+  There is no delivery in this case, so we do not show a 0.00 shipping cost line.
+#}
+{% block page_checkout_summary_shippings %}
+    {% for delivery in summary.deliveries %}
+        {% if delivery.shippingMethod is defined and delivery.shippingMethod.technicalName == 'click_collect' %}
+            {# No delivery for pickup: suppress shipping label/value #}
+        {% else %}
+            {% block page_checkout_summary_shipping %}
+                {% block page_checkout_summary_shipping_label %}
+                    <dt class="col-7 checkout-aside-summary-label">
+                        {{ 'checkout.summaryShipping'|trans|sw_sanitize }}
+                    </dt>
+                {% endblock %}
+
+                {% block page_checkout_summary_shipping_value %}
+                    <dd class="col-5 checkout-aside-summary-value">
+                        {% set deliveryPrice = delivery.shippingCosts.totalPrice ?? 0 %}
+                        {% if deliveryPrice < 0 %}&minus;{% endif %}
+                        {{ deliveryPrice|abs|currency }}
+                    </dd>
+                {% endblock %}
+            {% endblock %}
+        {% endif %}
+    {% endfor %}
+{% endblock %}

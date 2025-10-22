@@ -1,0 +1,11 @@
+{% sw_extends '@Storefront/storefront/page/checkout/confirm/confirm-address.html.twig' %}
+
+{#
+  Hide shipping and billing address panels when Click & Collect (pickup) is selected.
+#}
+{% block page_checkout_confirm_address %}
+    {% set isClickCollect = context.shippingMethod is defined and context.shippingMethod and context.shippingMethod.technicalName == 'click_collect' %}
+    {% if not isClickCollect %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
