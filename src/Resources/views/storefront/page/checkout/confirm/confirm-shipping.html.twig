@@ -1,0 +1,44 @@
+{% sw_extends '@Storefront/storefront/page/checkout/confirm/confirm-shipping.html.twig' %}
+
+{#
+  Add pickup instructions and a static store card when Click & Collect is selected.
+  Uses system config under FoerdeClickCollect.config.*
+#}
+{% block page_checkout_confirm_shipping %}
+    {{ parent() }}
+
+    {% set isClickCollect = context.shippingMethod is defined and context.shippingMethod and context.shippingMethod.technicalName == 'click_collect' %}
+    {% if isClickCollect %}
+        {% set pickupDays = config('FoerdeClickCollect.config.pickupWindowDays') ?? 2 %}
+        {% set prepHours = config('FoerdeClickCollect.config.pickupPreparationHours') ?? 4 %}
+        {% set storeName = config('FoerdeClickCollect.config.storeName') %}
+        {% set storeAddress = config('FoerdeClickCollect.config.storeAddress') %}
+        {% set openingHours = config('FoerdeClickCollect.config.storeOpeningHours') %}
+
+        <div class="card my-3">
+            <div class="card-body">
+                <h3 class="card-title h5 mb-2">Abholung im Markt</h3>
+                <p class="mb-3">Die Ware steht in {{ prepHours }} Stunden für {{ pickupDays }} Tage zur Abholung bereit.</p>
+
+                {% if storeName or storeAddress or openingHours %}
+                    <div class="row">
+                        <div class="col-12 col-md-6">
+                            {% if storeName %}
+                                <div class="fw-bold">{{ storeName }}</div>
+                            {% endif %}
+                            {% if storeAddress %}
+                                <div class="text-prewrap">{{ storeAddress }}</div>
+                            {% endif %}
+                        </div>
+                        {% if openingHours %}
+                            <div class="col-12 col-md-6 mt-2 mt-md-0">
+                                <div class="fw-bold">Öffnungszeiten</div>
+                                <div class="text-prewrap">{{ openingHours }}</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
