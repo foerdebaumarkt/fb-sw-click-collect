@@ -77,7 +77,7 @@ This plan assumes Shopware 6.7 CE as the baseline and follows the guidance from 
    - [x] Hide shipping cost line in the order summary for `click_collect`.
    - [x] Hide Lieferadresse and Rechnungsadresse on the confirm page when `click_collect` is active.
    - [x] Simplify footer notice for `click_collect` to: “Alle Preise inkl. gesetzl. Mehrwertsteuer.”
-   - [ ] Provide a static store card (name, address, opening hours) from plugin config.
+   - [x] Provide a static store card (name, address, opening hours) from plugin config.
    - [ ] Suppress any remaining delivery-time UI blocks where applicable.
    - Checkpoint: reload the confirm page and confirm the pickup instructions render with configured data and shipping cost is not displayed.
 1. **Lifecycle wiring**: Register delivery state machine extensions and expose transitions in the admin order detail view. Checkpoint: place a test order, open it in admin, and walk states through pending → ready → picked to confirm transitions exist and history logs correctly.

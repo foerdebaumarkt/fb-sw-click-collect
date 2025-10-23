@@ -8,5 +8,10 @@
         <service id="FoerdeClickCollect\Service\Payment\ClickCollectPaymentHandler">
             <tag name="shopware.payment.method"/>
         </service>
+        <!-- Staff notification on order placed for Click & Collect -->
+        <service id="FoerdeClickCollect\EventSubscriber\OrderPlacedSubscriber">
+            <tag name="kernel.event_subscriber"/>
+            <argument type="service" id="order.repository"/>
+        </service>
     </services>
 </container>

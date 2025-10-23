@@ -44,5 +44,13 @@
             <label lang="en-GB">Opening hours</label>
             <label lang="de-DE">Öffnungszeiten</label>
         </input-field>
+
+        <input-field type="text">
+            <name>storeEmail</name>
+            <label lang="en-GB">Store email (staff inbox)</label>
+            <label lang="de-DE">E-Mail des Markts (Mitarbeiter)</label>
+            <helpText lang="en-GB">Orders with Click & Collect will notify this address when placed.</helpText>
+            <helpText lang="de-DE">Bei Click & Collect wird an diese Adresse eine Benachrichtigung gesendet.</helpText>
+        </input-field>
     </card>
 </config>
