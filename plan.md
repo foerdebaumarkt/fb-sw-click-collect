@@ -66,8 +66,8 @@ This plan assumes Shopware 6.7 CE as the baseline and follows the guidance from 
 1. **Plugin bootstrap**: Scaffold the plugin, register services.xml, composer autoloading, and activation hooks. Checkpoint: install and activate the plugin in a dev shop, confirm the plugin appears with its system config section and no errors in the logs.
 1. [x] **Shipping method provisioning** — DONE: Implemented install/activate logic that creates and links the click & collect shipping method (technical_name `click_collect`), ensures a standard delivery time, and links to all storefront sales channels. Note: this method represents store pickup (no delivery), so shipping cost must be hidden in UI, not shown as 0.
 1. [x] **Payment method provisioning** — DONE: Implemented a synchronous offline payment handler and upserted the payment method (technical_name `click_collect`, name “Bezahlung im Markt”), assigned an availability rule limited to the Click & Collect shipping method (using operator `=`), and attached it to all storefront sales channels. When it’s the only available method, it’s preselected automatically by Shopware.
-1. **Checkout enforcement**: Add event subscribers and route decorators to auto-select the pickup method and lock payment to “Pay in store.”
-   - [ ] Auto-select `click_collect` shipping method on cart recalculation; prevent deselection via route decorator or JS.
+1. **Checkout enforcement**: Add event subscribers and route decorators to lock payment to “Pay in store.”
+   - [ ] (Deferred) Auto-select `click_collect` shipping method on cart recalculation and prevent deselection via route decorator or JS. This is not critical while only Click & Collect is enabled in the shop.
    - [x] Availability is restricted via rule, so only the offline payment shows when `click_collect` is active.
    - [x] Hide shipping/delivery cost rows in the UI because there is no delivery for `click_collect`.
    - Checkpoint: run through checkout manually to ensure the method cannot be deselected, the correct payment option remains, and no shipping/delivery cost row is rendered.
@@ -93,6 +93,7 @@ This plan assumes Shopware 6.7 CE as the baseline and follows the guidance from 
 ## 12. Future Enhancements
 
 - Optional escalation reminders or multi-channel nudges if pickup remains pending beyond the configured daily cadence.
+- Auto-select `click_collect` and prevent deselection (route decorator / subscriber) once additional shipping methods are enabled.
 - Dedicated Administration module for a focused pickup dashboard following the Module system guidance in [Administration extensions].
 - CLI command `foerde:click-collect:list` for daily handover reports if manual exports become unwieldy.
 - Additional reporting/tagging integrations for BI dashboards.
