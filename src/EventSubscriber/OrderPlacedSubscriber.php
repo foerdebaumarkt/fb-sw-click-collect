@@ -3,7 +3,7 @@
 namespace FoerdeClickCollect\EventSubscriber;
 
 use Shopware\Core\Checkout\Order\OrderEntity;
-use Shopware\Core\Checkout\Order\Event\OrderPlacedEvent;
+use Shopware\Core\Checkout\Cart\Event\CheckoutOrderPlacedEvent;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -26,17 +26,20 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            OrderPlacedEvent::class => 'onOrderPlaced',
+            CheckoutOrderPlacedEvent::class => 'onOrderPlaced',
         ];
     }
 
-    public function onOrderPlaced(OrderPlacedEvent $event): void
+    public function onOrderPlaced(CheckoutOrderPlacedEvent $event): void
     {
         $context = $event->getContext();
         $order = $this->loadOrder($event->getOrderId(), $context);
         if (!$order) {
             return;
         }
+
+        // Debug trace to verify subscriber execution
+        error_log('[FoerdeClickCollect] onOrderPlaced triggered for order ' . ($order->getOrderNumber() ?? $order->getId()));
 
         $delivery = $order->getDeliveries()?->first();
         $shipping = $delivery?->getShippingMethod();
@@ -56,14 +59,19 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
         $storeAddress = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelId) ?? '');
         $openingHours = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelId) ?? '');
 
-        $html = $this->twig->render('@FoerdeClickCollect/email/click_collect_staff_order_placed.html.twig', [
-            'order' => $order,
-            'pickupDays' => $pickupDays,
-            'prepHours' => $prepHours,
-            'storeName' => $storeName,
-            'storeAddress' => $storeAddress,
-            'openingHours' => $openingHours,
-        ]);
+        try {
+            $html = $this->twig->render('@FoerdeClickCollect/email/click_collect_staff_order_placed.html.twig', [
+                'order' => $order,
+                'pickupDays' => $pickupDays,
+                'prepHours' => $prepHours,
+                'storeName' => $storeName,
+                'storeAddress' => $storeAddress,
+                'openingHours' => $openingHours,
+            ]);
+        } catch (\Throwable $e) {
+            error_log('[FoerdeClickCollect] staff mail render failed: ' . $e->getMessage());
+            return;
+        }
 
         $subject = sprintf('Neue Click & Collect Bestellung #%s', $order->getOrderNumber());
 
