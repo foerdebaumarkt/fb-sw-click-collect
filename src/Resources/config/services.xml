@@ -16,5 +16,9 @@
         <service id="FoerdeClickCollect\EventSubscriber\OrderDeliveryReadySubscriber">
             <tag name="kernel.event_subscriber"/>
         </service>
+        <!-- Console command to send pickup reminders -->
+        <service id="FoerdeClickCollect\Command\SendRemindersCommand">
+            <tag name="console.command"/>
+        </service>
     </services>
 </container>
