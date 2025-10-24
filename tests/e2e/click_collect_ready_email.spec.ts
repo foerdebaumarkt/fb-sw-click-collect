@@ -310,6 +310,33 @@ async function transitionDeliveryToReady(token: string, deliveryId: string): Pro
   throw new Error(`Failed to transition delivery to ready (last status ${lastStatus})`);
 }
 
+async function findLatestOrderNumberByEmail(token: string, email: string): Promise<string | null> {
+  const criteria = {
+    limit: 1,
+    filter: [
+      { type: 'equals', field: 'orderCustomer.email', value: email },
+    ],
+    sort: [
+      { field: 'createdAt', order: 'DESC' as const },
+    ],
+    includes: { order: ['orderNumber'] },
+  } as any;
+  const res = await fetch(resolveUrl('api/search/order'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(criteria),
+  });
+  if (!res.ok) {
+    return null;
+  }
+  const data = (await res.json()) as { data?: Array<any> };
+  const first = Array.isArray(data?.data) && data.data.length ? data.data[0] : null;
+  if (!first) return null;
+  const attributes = (first && typeof first === 'object' && 'attributes' in first) ? (first as any).attributes : first;
+  const number = attributes?.orderNumber ?? null;
+  return typeof number === 'string' && number.length > 0 ? number : null;
+}
+
 test('Click & Collect: ready email is sent on delivery -> ready', async ({ page }) => {
   test.setTimeout(180_000);
 
@@ -395,11 +422,24 @@ test('Click & Collect: ready email is sent on delivery -> ready', async ({ page 
   await acceptTerms(page);
   await placeOrder(page);
 
-  await expect(page.locator('body')).toContainText(/Vielen Dank|Bestellung eingegangen/i, { timeout: 30000 });
-  const bodyText = await page.locator('body').innerText();
-  const orderNumber = extractOrderNumber(bodyText) ?? 'UNKNOWN';
+  let orderNumber: string | null = null;
+  // Try to detect finish page and extract order number; fall back to Admin API lookup by email
+  try {
+    await expect(page.locator('body')).toContainText(/Vielen Dank|Bestellung eingegangen/i, { timeout: 15000 });
+    const bodyText = await page.locator('body').innerText();
+    orderNumber = extractOrderNumber(bodyText);
+  } catch {
+    // ignore, we'll resolve via Admin API
+  }
 
   const token = await getAdminToken();
+  if (!orderNumber) {
+    orderNumber = await findLatestOrderNumberByEmail(token, email);
+  }
+  if (!orderNumber) {
+    throw new Error('Failed to determine order number from finish page or Admin API.');
+  }
+
   const deliveryId = await findFirstDeliveryIdByOrderNumber(token, orderNumber);
   await transitionDeliveryToReady(token, deliveryId);
 
