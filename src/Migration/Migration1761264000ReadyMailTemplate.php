@@ -16,42 +16,33 @@ class Migration1761264000ReadyMailTemplate extends MigrationStep
 
     public function update(Connection $connection): void
     {
-        // Ensure type exists and is named using fb_* (rename from legacy foerde_* when needed)
-        $fbTypeId = $connection->fetchOne('SELECT id FROM mail_template_type WHERE technical_name = :name', [
+        // Fresh install: ensure fb_* type exists (no legacy renames)
+        $typeId = $connection->fetchOne('SELECT id FROM mail_template_type WHERE technical_name = :name', [
             'name' => 'fb_click_collect.ready',
         ]);
-        $foerdeTypeId = $connection->fetchOne('SELECT id FROM mail_template_type WHERE technical_name = :name', [
-            'name' => 'foerde_click_collect.ready',
-        ]);
 
-        if (!$fbTypeId && $foerdeTypeId) {
-            // Rename legacy technical name to fb_*
-            $connection->update('mail_template_type', ['technical_name' => 'fb_click_collect.ready'], ['id' => $foerdeTypeId]);
-            $fbTypeId = $foerdeTypeId;
-        }
-
-        if (!$fbTypeId) {
-            $fbTypeId = Uuid::randomBytes();
+        if (!$typeId) {
+            $typeId = Uuid::randomBytes();
             $connection->insert('mail_template_type', [
-                'id' => $fbTypeId,
+                'id' => $typeId,
                 'technical_name' => 'fb_click_collect.ready',
                 'available_entities' => json_encode(['order' => 'order'], JSON_THROW_ON_ERROR),
                 'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
             ]);
 
-            $this->insertTypeTranslation($connection, $fbTypeId, 'de-DE', 'Click & Collect: Abholbereit');
-            $this->insertTypeTranslation($connection, $fbTypeId, 'en-GB', 'Click & Collect: Ready for pickup');
+            $this->insertTypeTranslation($connection, $typeId, 'de-DE', 'Click & Collect: Abholbereit');
+            $this->insertTypeTranslation($connection, $typeId, 'en-GB', 'Click & Collect: Ready for pickup');
         }
 
         // Ensure there's a template for the type
         $templateId = $connection->fetchOne('SELECT id FROM mail_template WHERE mail_template_type_id = :tid', [
-            'tid' => $fbTypeId,
+            'tid' => $typeId,
         ]);
         if (!$templateId) {
             $templateId = Uuid::randomBytes();
             $connection->insert('mail_template', [
                 'id' => $templateId,
-                'mail_template_type_id' => $fbTypeId,
+                'mail_template_type_id' => $typeId,
                 'system_default' => 0,
                 'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
             ]);
