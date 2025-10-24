@@ -68,10 +68,10 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
         $customerName = (string) ($row['customer_name'] ?: $row['email']);
         $orderNumber = (string) $row['order_number'];
 
-        $typeId = $this->connection->fetchOne(
-            'SELECT id FROM mail_template_type WHERE technical_name = :name',
-            ['name' => 'foerde_click_collect.ready']
-        );
+            $typeId = $this->connection->fetchOne(
+                'SELECT id FROM mail_template_type WHERE technical_name = :name',
+                ['name' => 'fb_click_collect.ready']
+            );
         $templateId = $typeId ? $this->connection->fetchOne(
             'SELECT id FROM mail_template WHERE mail_template_type_id = :typeId ORDER BY created_at DESC LIMIT 1',
             ['typeId' => $typeId]
