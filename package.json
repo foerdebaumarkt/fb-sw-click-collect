@@ -1,0 +1,12 @@
+{
+  "name": "@foerdebaumarkt/fb-sw-click-collect",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "./tests/e2e/install_plugin.sh && PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-http://localhost:8080} MAILCATCHER_URL=${MAILCATCHER_URL:-http://localhost:1080} npx playwright test --config tests/e2e/playwright.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.7.5"
+  }
+}

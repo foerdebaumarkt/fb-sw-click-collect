@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/trunk/src/Core/System/SystemConfig/Schema/config-1.0.xsd">
+    xsi:noNamespaceSchemaLocation="vendor/shopware/core/System/SystemConfig/Schema/config-1.0.xsd">
     <card>
         <title lang="en-GB">Click &amp; Collect</title>
         <title lang="de-DE">Click &amp; Collect</title>
@@ -49,8 +49,8 @@
             <name>storeEmail</name>
             <label lang="en-GB">Store email (staff inbox)</label>
             <label lang="de-DE">E-Mail des Markts (Mitarbeiter)</label>
-            <helpText lang="en-GB">Orders with Click & Collect will notify this address when placed.</helpText>
-            <helpText lang="de-DE">Bei Click & Collect wird an diese Adresse eine Benachrichtigung gesendet.</helpText>
+            <helpText lang="en-GB">Orders with Click &amp; Collect will notify this address when placed.</helpText>
+            <helpText lang="de-DE">Bei Click &amp; Collect wird an diese Adresse eine Benachrichtigung gesendet.</helpText>
         </input-field>
     </card>
 </config>

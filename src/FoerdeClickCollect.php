@@ -49,6 +49,11 @@ class FoerdeClickCollect extends Plugin
         // Keep data to avoid breaking orders/history. No hard delete here.
     }
 
+    public function getMigrationNamespace(): string
+    {
+        return 'FoerdeClickCollect\\Migration';
+    }
+
     private function provision(Context $context): void
     {
         /** @var EntityRepository $shippingRepo */
