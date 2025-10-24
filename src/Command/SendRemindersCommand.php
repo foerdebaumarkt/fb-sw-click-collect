@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'foerde:click-collect:send-reminders', description: 'Send Click & Collect pickup reminders for ready deliveries within pickup window')]
+#[AsCommand(name: 'fb:click-collect:send-reminders', description: 'Send Click & Collect pickup reminders for ready deliveries within pickup window')]
 class SendRemindersCommand extends Command
 {
     public function __construct(
@@ -29,6 +29,25 @@ class SendRemindersCommand extends Command
 
         $now = new \DateTimeImmutable('now');
         $today = $now->format('Y-m-d');
+
+        // Require a DB template to exist; otherwise fail fast
+        $typeId = $this->connection->fetchOne(
+            'SELECT id FROM mail_template_type WHERE technical_name = :name',
+            ['name' => 'fb_click_collect.reminder']
+        );
+        if (!$typeId) {
+            $io->error('Missing mail_template_type fb_click_collect.reminder. Run migrations or create the template type.');
+            return Command::FAILURE;
+        }
+
+        $templateId = $this->connection->fetchOne(
+            'SELECT id FROM mail_template WHERE mail_template_type_id = :typeId ORDER BY created_at DESC LIMIT 1',
+            ['typeId' => $typeId]
+        );
+        if (!$templateId) {
+            $io->error('No mail_template found for type fb_click_collect.reminder. Create a template in Admin.');
+            return Command::FAILURE;
+        }
 
         // Find deliveries in state 'ready' for click_collect, not yet picked/cancelled, and still within pickup window.
         // We approximate by comparing order.created_at + pickupWindowDays >= today.
@@ -56,7 +75,7 @@ class SendRemindersCommand extends Command
             ]
         );
 
-        $sent = 0;
+    $sent = 0;
         foreach ($rows as $row) {
             $salesChannelId = $row['sales_channel_id'];
             $languageId = $row['language_id'] ?? null;
@@ -83,49 +102,46 @@ class SendRemindersCommand extends Command
                 continue;
             }
 
-            // Try to use DB template type if available
-            $typeId = $this->connection->fetchOne(
-                'SELECT id FROM mail_template_type WHERE technical_name = :name',
-                ['name' => 'fb_click_collect.reminder']
-            );
-            $templateId = $typeId ? $this->connection->fetchOne(
-                'SELECT id FROM mail_template WHERE mail_template_type_id = :typeId ORDER BY created_at DESC LIMIT 1',
-                ['typeId' => $typeId]
-            ) : null;
-
             $senderName = (string) ($this->systemConfig->get('core.mailerSettings.senderName', $salesChannelIdHex) ?? $storeName);
             $senderEmail = (string) ($this->systemConfig->get('core.mailerSettings.senderAddress', $salesChannelIdHex) ?? 'no-reply@example.com');
 
             $subjectFromTemplate = null;
             $contentHtmlFromTemplate = '';
             $contentPlainFromTemplate = '';
-            if ($templateId) {
-                $templateTrans = null;
-                if (is_string($languageId)) {
-                    $templateTrans = $this->connection->fetchAssociative(
-                        'SELECT subject, content_html, content_plain FROM mail_template_translation WHERE mail_template_id = :tid AND language_id = :lid',
-                        ['tid' => $templateId, 'lid' => $languageId]
-                    );
-                }
-                if (!$templateTrans) {
-                    $defaultLang = hex2bin('2fbb5fe2e29a4d70aa5854ce7ce3e20b');
-                    $templateTrans = $this->connection->fetchAssociative(
-                        'SELECT subject, content_html, content_plain FROM mail_template_translation WHERE mail_template_id = :tid AND language_id = :lid',
-                        ['tid' => $templateId, 'lid' => $defaultLang]
-                    );
-                }
-                if (!$templateTrans) {
-                    $templateTrans = $this->connection->fetchAssociative(
-                        'SELECT subject, content_html, content_plain FROM mail_template_translation WHERE mail_template_id = :tid ORDER BY created_at DESC LIMIT 1',
-                        ['tid' => $templateId]
-                    );
-                }
+            // Resolve DB template translation (language, fallback to default language, then last translation)
+            $templateTrans = null;
+            if (is_string($languageId)) {
+                $templateTrans = $this->connection->fetchAssociative(
+                    'SELECT subject, content_html, content_plain FROM mail_template_translation WHERE mail_template_id = :tid AND language_id = :lid',
+                    ['tid' => $templateId, 'lid' => $languageId]
+                );
+            }
+            if (!$templateTrans) {
+                $defaultLang = hex2bin('2fbb5fe2e29a4d70aa5854ce7ce3e20b');
+                $templateTrans = $this->connection->fetchAssociative(
+                    'SELECT subject, content_html, content_plain FROM mail_template_translation WHERE mail_template_id = :tid AND language_id = :lid',
+                    ['tid' => $templateId, 'lid' => $defaultLang]
+                );
+            }
+            if (!$templateTrans) {
+                $templateTrans = $this->connection->fetchAssociative(
+                    'SELECT subject, content_html, content_plain FROM mail_template_translation WHERE mail_template_id = :tid ORDER BY created_at DESC LIMIT 1',
+                    ['tid' => $templateId]
+                );
+            }
 
-                if ($templateTrans) {
-                    $subjectFromTemplate = (string) ($templateTrans['subject'] ?? '');
-                    $contentHtmlFromTemplate = (string) ($templateTrans['content_html'] ?? '');
-                    $contentPlainFromTemplate = (string) ($templateTrans['content_plain'] ?? '');
-                }
+            if (!$templateTrans) {
+                $io->error(sprintf('No translation found for reminder template. Cannot send reminder for order #%s', $orderNumber));
+                return Command::FAILURE;
+            }
+
+            $subjectFromTemplate = (string) ($templateTrans['subject'] ?? '');
+            $contentHtmlFromTemplate = (string) ($templateTrans['content_html'] ?? '');
+            $contentPlainFromTemplate = (string) ($templateTrans['content_plain'] ?? '');
+
+            if ($subjectFromTemplate === '' && $contentHtmlFromTemplate === '' && $contentPlainFromTemplate === '') {
+                $io->error('Reminder template translation has no subject or content. Aborting.');
+                return Command::FAILURE;
             }
 
             $data = [
@@ -136,7 +152,7 @@ class SendRemindersCommand extends Command
                 'senderEmail' => $senderEmail,
                 'contentHtml' => $contentHtmlFromTemplate,
                 'contentPlain' => $contentPlainFromTemplate,
-                'subject' => $subjectFromTemplate ?: sprintf('Erinnerung: Bitte holen Sie Ihre Bestellung #%s ab', $orderNumber),
+                'subject' => $subjectFromTemplate,
             ];
 
             $templateData = [
