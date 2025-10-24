@@ -51,6 +51,40 @@ async function acceptCookies(page: Page) {
   }
 }
 
+async function chooseFirstVariantIfNeeded(page: Page) {
+  // If the buy button is disabled or not visible, try to select first available variant options
+  const buyBtn = page.getByRole('button', { name: /In den Warenkorb|Add to shopping cart|Jetzt kaufen|Kaufen/i }).first();
+  const disabled = await buyBtn.isVisible().catch(() => false)
+    ? await buyBtn.isDisabled().catch(() => false)
+    : true;
+  if (!disabled) return;
+
+  // Try select elements first
+  const selects = page.locator('select:visible');
+  const count = await selects.count();
+  for (let i = 0; i < count; i++) {
+    const sel = selects.nth(i);
+    try {
+      const options = await sel.locator('option:not([disabled]):not([value=""])').all();
+      if (options.length > 0) {
+        const value = await options[0].getAttribute('value');
+        if (value) await sel.selectOption(value);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Try clickable variant swatches
+  const swatches = page.locator('[data-variant-id], .product-variant, .sw-product-variant__option:visible');
+  const swCount = await swatches.count().catch(() => 0);
+  if (swCount > 0) {
+    try {
+      await swatches.first().click({ force: true });
+    } catch {/* ignore */}
+  }
+}
+
 async function fillGuestCheckout(page: Page, email: string) {
   const guestButtons = [
     page.getByRole('button', { name: /Als Gast fortfahren|Weiter als Gast|Gastbestellung|Checkout as guest/i }),
@@ -301,8 +335,56 @@ test('Click & Collect: ready email is sent on delivery -> ready', async ({ page 
 
   const addToCart = page.getByRole('button', { name: /In den Warenkorb|Add to shopping cart/i });
   await expect(addToCart).toBeVisible();
+  // If variants required, pick first available
+  await chooseFirstVariantIfNeeded(page);
   await addToCart.click();
 
+  // Wait for offcanvas or any confirmation flash
+  const offcanvas = page.locator('.offcanvas, .cart-offcanvas, .offcanvas.is-open');
+  await offcanvas.waitFor({ state: 'visible', timeout: 5000 }).catch(() => undefined);
+
+  // If "go to cart/checkout" button is present, use it; else we'll navigate explicitly
+  const goToCart = page.getByRole('button', { name: /Warenkorb anzeigen|Zum Warenkorb|Warenkorb öffnen/i }).first();
+  const goToCheckout = page.getByRole('button', { name: /Zur Kasse|Checkout/i }).first();
+  if (await goToCheckout.isVisible().catch(() => false)) {
+    await goToCheckout.click();
+    await page.waitForLoadState('networkidle');
+  } else if (await goToCart.isVisible().catch(() => false)) {
+    await goToCart.click();
+    await page.waitForLoadState('networkidle');
+  }
+
+  // Ensure we are in checkout context: first go to cart, then progress
+  if (!/checkout\/(cart|confirm|register)/.test(page.url())) {
+    await page.goto(resolveUrl('checkout/cart'));
+  }
+  // If cart is empty, retry a direct navigation to product page and add once more
+  const cartEmpty = page.locator('body');
+  const cartEmptyText = await cartEmpty.innerText().catch(() => '');
+  if (/Warenkorb ist leer|Cart is empty/i.test(cartEmptyText)) {
+    // Retry add-to-cart once in case the first click was swallowed
+    await page.goBack({ waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    if (!/detail\//.test(page.url())) {
+      // We might be on listing; click first product
+      const firstProduct = page.locator('a.product-name, a.card-title, a[href*="/detail/"]').first();
+      if (await firstProduct.isVisible().catch(() => false)) {
+        await firstProduct.click();
+        await page.waitForLoadState('networkidle');
+      }
+    }
+    await chooseFirstVariantIfNeeded(page);
+    await addToCart.click();
+    await page.goto(resolveUrl('checkout/cart'));
+  }
+
+  // Proceed to confirm/register from cart
+  const proceed = page.getByRole('button', { name: /Zur Kasse|Weiter zur Kasse|Proceed to checkout/i }).first();
+  if (await proceed.isVisible().catch(() => false)) {
+    await proceed.click();
+    await page.waitForLoadState('networkidle');
+  }
+
+  // Land on confirm or register
   await page.goto(resolveUrl('checkout/confirm'));
   await page.waitForLoadState('networkidle');
 
