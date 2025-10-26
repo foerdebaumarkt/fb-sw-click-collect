@@ -5,6 +5,7 @@ namespace FoerdeClickCollect\EventSubscriber;
 use Doctrine\DBAL\Connection;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Content\Mail\Service\MailService;
+use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\Framework\Validation\Exception\ConstraintViolationException;
 use Shopware\Core\System\StateMachine\Event\StateMachineTransitionEvent;
@@ -47,7 +48,8 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
         $deliveryId = Uuid::fromHexToBytes($deliveryIdHex);
 
         $row = $this->connection->fetchAssociative(
-            'SELECT o.order_number, o.sales_channel_id, o.language_id, oc.email, CONCAT_WS(" ", oc.first_name, oc.last_name) AS customer_name
+            'SELECT o.order_number, o.sales_channel_id, o.language_id, oc.email, oc.first_name, oc.last_name,
+                    CONCAT_WS(" ", oc.first_name, oc.last_name) AS customer_name
              FROM order_delivery od
              INNER JOIN `order` o ON o.id = od.order_id AND o.version_id = od.order_version_id
              INNER JOIN order_customer oc ON oc.order_id = o.id AND oc.version_id = o.version_id
@@ -67,19 +69,57 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
         $email = (string) $row['email'];
         $customerName = (string) ($row['customer_name'] ?: $row['email']);
         $orderNumber = (string) $row['order_number'];
+        $customerFirstName = trim((string) ($row['first_name'] ?? ''));
+        $customerLastName = trim((string) ($row['last_name'] ?? ''));
+        if ($customerFirstName === '' && $customerLastName === '' && $customerName !== '' && !filter_var($customerName, FILTER_VALIDATE_EMAIL)) {
+            $pieces = preg_split('/\s+/', trim($customerName), 2);
+            $customerFirstName = $pieces[0] ?? '';
+            $customerLastName = $pieces[1] ?? '';
+        }
 
-            $typeId = $this->connection->fetchOne(
-                'SELECT id FROM mail_template_type WHERE technical_name = :name',
-                ['name' => 'fb_click_collect.ready']
-            );
+        $typeId = $this->connection->fetchOne(
+            'SELECT id FROM mail_template_type WHERE technical_name = :name',
+            ['name' => 'fb_click_collect.ready']
+        );
         $templateId = $typeId ? $this->connection->fetchOne(
             'SELECT id FROM mail_template WHERE mail_template_type_id = :typeId ORDER BY created_at DESC LIMIT 1',
             ['typeId' => $typeId]
         ) : null;
 
-        $storeName = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeName', $salesChannelIdHex) ?? 'Ihr Markt');
-        $storeAddress = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelIdHex) ?? '');
-        $openingHoursCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelIdHex) ?? '');
+        $storeNameCfg = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeName', $salesChannelIdHex));
+        if ($storeNameCfg === '') {
+            $storeNameCfg = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeName'));
+        }
+        $localeCode = $this->resolveLocaleCode($languageId);
+        $storeName = $storeNameCfg;
+        if ($storeName === '') {
+            $resolvedChannelName = $this->resolveSalesChannelName($salesChannelId, $languageId);
+            if ($resolvedChannelName !== null) {
+                $storeName = $this->normalizeConfigValue($resolvedChannelName);
+            }
+        }
+        if ($storeName === '') {
+            $storeName = $this->fallbackStoreName($localeCode);
+        }
+
+        $storeAddressCfg = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelIdHex));
+        if ($storeAddressCfg === '') {
+            $storeAddressCfg = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeAddress'));
+        }
+        $storeAddress = $storeAddressCfg;
+        if ($storeAddress === '') {
+            $basicAddress = $this->normalizeConfigValue($this->systemConfig->get('core.basicInformation.address', $salesChannelIdHex));
+            if ($basicAddress === '') {
+                $basicAddress = $this->normalizeConfigValue($this->systemConfig->get('core.basicInformation.address'));
+            }
+            $storeAddress = $basicAddress;
+        }
+
+        $openingHoursCfgRaw = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelIdHex));
+        if ($openingHoursCfgRaw === '') {
+            $openingHoursCfgRaw = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours'));
+        }
+        $openingHoursCfg = $openingHoursCfgRaw;
         $pickupWindowDays = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupWindowDays', $salesChannelIdHex) ?? 2);
         $pickupPreparationHours = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupPreparationHours', $salesChannelIdHex) ?? 4);
 
@@ -131,10 +171,15 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
 
         $templateData = [
             'orderNumber' => $orderNumber,
+            'customer' => [
+                'firstName' => $customerFirstName,
+                'lastName' => $customerLastName,
+                'email' => $email,
+            ],
             'config' => [
                 'storeName' => $storeName,
-                'storeAddress' => $storeAddress,
-                'openingHours' => $openingHoursCfg,
+                'storeAddress' => $storeAddress !== '' ? $storeAddress : null,
+                'openingHours' => $openingHoursCfg !== '' ? $openingHoursCfg : null,
                 'pickupWindowDays' => $pickupWindowDays,
                 'pickupPreparationHours' => $pickupPreparationHours,
             ],
@@ -155,17 +200,17 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
             ]);
 
             $openingHtml = $openingHoursCfg !== ''
-                ? '<br/><em>Öffnungszeiten:</em><br/>' . nl2br(htmlspecialchars($openingHoursCfg))
+                ? '<br/><em>Oeffnungszeiten:</em><br/>' . nl2br(htmlspecialchars($openingHoursCfg))
                 : '';
             $fallbackHtml = sprintf(
                 '<p>Hallo %s,</p>' .
-                '<p>Ihre Click & Collect Bestellung <strong>#%s</strong> ist abholbereit und liegt für Sie im Markt bereit.</p>' .
+                '<p>Ihre Click & Collect Bestellung <strong>#%s</strong> ist abholbereit und liegt fuer Sie im Markt bereit.</p>' .
                 '<p><strong>Abholung</strong><br/>%s<br/>%s%s</p>' .
                 '<p><strong>Bitte mitbringen</strong></p>' .
-                '<ul><li>Bestellnummer <strong>#%s</strong></li><li>Diese E‑Mail (optional)</li></ul>' .
-                '<p><strong>Hinweis</strong><br/>Zur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.</p>' .
+                '<ul><li>Bestellnummer <strong>#%s</strong></li><li>Diese E-Mail (optional)</li></ul>' .
+                '<p><strong>Hinweis</strong><br/>Zur Abholung genuegt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.</p>' .
                 '<p><strong>Abholhinweise</strong><br/>Bitte holen Sie die Ware innerhalb von <strong>%d</strong> Tagen ab.</p>' .
-                '<p>Vielen Dank und bis bald!<br/>Ihr Förde Baumarkt Team</p>',
+                '<p>Vielen Dank und bis bald!<br/>Ihr Foerde Baumarkt Team</p>',
                 htmlspecialchars($customerName),
                 htmlspecialchars($orderNumber),
                 htmlspecialchars($storeName),
@@ -176,16 +221,16 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
             );
 
             $openingPlain = $openingHoursCfg !== ''
-                ? "\n\nÖffnungszeiten:\n" . $openingHoursCfg
+                ? "\n\nOeffnungszeiten:\n" . $openingHoursCfg
                 : '';
             $fallbackText = sprintf(
                 "Hallo %s\n\n" .
-                "Ihre Click & Collect Bestellung #%s ist abholbereit und liegt für Sie im Markt bereit.\n\n" .
+                "Ihre Click & Collect Bestellung #%s ist abholbereit und liegt fuer Sie im Markt bereit.\n\n" .
                 "Abholung:\n%s\n%s%s\n\n" .
-                "Bitte mitbringen:\n- Bestellnummer #%s\n- Diese E‑Mail (optional)\n\n" .
-                "Hinweis:\nZur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.\n\n" .
+                "Bitte mitbringen:\n- Bestellnummer #%s\n- Diese E-Mail (optional)\n\n" .
+                "Hinweis:\nZur Abholung genuegt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.\n\n" .
                 "Abholhinweise:\nBitte holen Sie die Ware innerhalb von %d Tagen ab.\n\n" .
-                "Vielen Dank und bis bald!\nIhr Förde Baumarkt Team\n",
+                "Vielen Dank und bis bald!\nIhr Foerde Baumarkt Team\n",
                 $customerName,
                 $orderNumber,
                 $storeName,
@@ -227,5 +272,75 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
                 'email' => $email,
             ]);
         }
+    }
+
+    private function resolveLocaleCode(?string $languageId): ?string
+    {
+        $languageBytes = $languageId;
+        if (!$languageBytes) {
+            $languageBytes = Uuid::fromHexToBytes(Defaults::LANGUAGE_SYSTEM);
+        }
+
+        $code = $this->connection->fetchOne(
+            'SELECT locale.code FROM language INNER JOIN locale ON locale.id = language.locale_id WHERE language.id = :id',
+            ['id' => $languageBytes]
+        );
+
+        return is_string($code) && $code !== '' ? $code : null;
+    }
+
+    private function resolveSalesChannelName(string $salesChannelId, ?string $languageId): ?string
+    {
+        $languageBytes = $languageId ?: Uuid::fromHexToBytes(Defaults::LANGUAGE_SYSTEM);
+
+        $name = $this->connection->fetchOne(
+            'SELECT name FROM sales_channel_translation WHERE sales_channel_id = :sid AND language_id = :lid',
+            ['sid' => $salesChannelId, 'lid' => $languageBytes]
+        );
+
+        if (!is_string($name) || trim($name) === '') {
+            $fallbackLang = Uuid::fromHexToBytes(Defaults::LANGUAGE_SYSTEM);
+            $name = $this->connection->fetchOne(
+                'SELECT name FROM sales_channel_translation WHERE sales_channel_id = :sid AND language_id = :lid',
+                ['sid' => $salesChannelId, 'lid' => $fallbackLang]
+            );
+        }
+
+        return is_string($name) ? $name : null;
+    }
+
+    private function fallbackStoreName(?string $localeCode): string
+    {
+        if (is_string($localeCode) && str_starts_with($localeCode, 'de')) {
+            return 'Ihr Markt';
+        }
+
+        return 'Your store';
+    }
+
+    private function normalizeConfigValue(mixed $value): string
+    {
+        if (!is_string($value)) {
+            return '';
+        }
+
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return '';
+        }
+
+        if (preg_match('/^\$+$/', $trimmed) === 1) {
+            return '';
+        }
+
+        if (preg_match('/^\$\{.*\}$/', $trimmed) === 1) {
+            return '';
+        }
+
+        if ($trimmed === '-' || $trimmed === '--' || strcasecmp($trimmed, 'n/a') === 0) {
+            return '';
+        }
+
+        return $trimmed;
     }
 }

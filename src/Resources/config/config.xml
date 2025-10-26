@@ -52,5 +52,15 @@
             <helpText lang="en-GB">Orders with Click &amp; Collect will notify this address when placed.</helpText>
             <helpText lang="de-DE">Bei Click &amp; Collect wird an diese Adresse eine Benachrichtigung gesendet.</helpText>
         </input-field>
+
+        <input-field type="text">
+            <name>reminderRunTime</name>
+            <label lang="en-GB">Daily reminder run time (HH:MM)</label>
+            <label lang="de-DE">Tägliche Erinnerungszeit (HH:MM)</label>
+            <helpText lang="en-GB">Time of day to send pickup reminders. Uses the shop timezone (Settings → Shop → Timezone). Default 06:00.</helpText>
+            <helpText lang="de-DE">Tageszeit für den Versand der Abhol-Erinnerungen. Verwendet die Shop-Zeitzone (Einstellungen → Shop → Zeitzone). Standard 06:00.</helpText>
+            <placeholder>06:00</placeholder>
+            <defaultValue>06:00</defaultValue>
+        </input-field>
     </card>
 </config>

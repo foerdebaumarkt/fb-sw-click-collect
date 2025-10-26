@@ -4,6 +4,9 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
     <services>
         <defaults autowire="true" autoconfigure="true" public="false"/>
+
+        <!-- Core reminder service -->
+        <service id="FoerdeClickCollect\Service\ReminderService" />
         <!-- Payment handler for Click & Collect (offline, synchronous) -->
         <service id="FoerdeClickCollect\Service\Payment\ClickCollectPaymentHandler">
             <tag name="shopware.payment.method"/>
@@ -18,7 +21,24 @@
         </service>
         <!-- Console command to send pickup reminders -->
         <service id="FoerdeClickCollect\Command\SendRemindersCommand">
-            <tag name="console.command"/>
+            <tag name="console.command" command="fb:click-collect:send-reminders"/>
+        </service>
+
+        <!-- Scheduled task handler to send reminders daily -->
+        <service id="FoerdeClickCollect\ScheduledTask\SendRemindersTaskHandler">
+            <argument type="service" id="shopware.repository.scheduled_task"/>
+            <tag name="shopware.scheduled.task.handler"/>
+        </service>
+
+        <!-- Align schedule when config/timezone changes -->
+        <service id="FoerdeClickCollect\EventSubscriber\SystemConfigSubscriber">
+            <tag name="kernel.event_subscriber"/>
+            <argument type="service" id="shopware.repository.scheduled_task"/>
+        </service>
+
+        <!-- Test-only controller to trigger reminders via Admin API in dev/test -->
+        <service id="FoerdeClickCollect\Controller\TestActionController">
+            <argument>%kernel.environment%</argument>
         </service>
     </services>
 </container>
