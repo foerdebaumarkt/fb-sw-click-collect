@@ -47,7 +47,8 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
         $deliveryId = Uuid::fromHexToBytes($deliveryIdHex);
 
         $row = $this->connection->fetchAssociative(
-            'SELECT o.order_number, o.sales_channel_id, o.language_id, oc.email, CONCAT_WS(" ", oc.first_name, oc.last_name) AS customer_name
+            'SELECT o.order_number, o.sales_channel_id, o.language_id, oc.email, oc.first_name, oc.last_name,
+                    CONCAT_WS(" ", oc.first_name, oc.last_name) AS customer_name
              FROM order_delivery od
              INNER JOIN `order` o ON o.id = od.order_id AND o.version_id = od.order_version_id
              INNER JOIN order_customer oc ON oc.order_id = o.id AND oc.version_id = o.version_id
@@ -66,7 +67,9 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
         $languageIdHex = is_string($languageId) ? Uuid::fromBytesToHex($languageId) : null;
         $email = (string) $row['email'];
         $customerName = (string) ($row['customer_name'] ?: $row['email']);
-        $orderNumber = (string) $row['order_number'];
+    $orderNumber = (string) $row['order_number'];
+    $customerFirstName = (string) ($row['first_name'] ?? '');
+    $customerLastName = (string) ($row['last_name'] ?? '');
 
             $typeId = $this->connection->fetchOne(
                 'SELECT id FROM mail_template_type WHERE technical_name = :name',
@@ -131,6 +134,11 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
 
         $templateData = [
             'orderNumber' => $orderNumber,
+            'customer' => [
+                'firstName' => $customerFirstName,
+                'lastName' => $customerLastName,
+                'email' => $email,
+            ],
             'config' => [
                 'storeName' => $storeName,
                 'storeAddress' => $storeAddress,

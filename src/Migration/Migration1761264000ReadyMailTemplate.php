@@ -65,7 +65,7 @@ class Migration1761264000ReadyMailTemplate extends MigrationStep
   <li>Diese E‑Mail (optional)</li>
   <li>Zur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.</li>
   <li>Bitte holen Sie die Ware innerhalb von <strong>{{ config.pickupWindowDays|default(2) }}</strong> Tagen ab.</li>
-<ul>
+</ul>
 <p>Vielen Dank und bis bald!<br/>Ihr Förde Baumarkt Team</p>
 HTML,
             <<<PLAIN
@@ -108,7 +108,7 @@ PLAIN
   <li>This email (optional)</li>
   <li>Stating your name is sufficient; payment happens in store.</li>
   <li>Please collect within <strong>{{ config.pickupWindowDays|default(2) }}</strong> days.</li>
-<ul>
+</ul>
 <p>Thank you and see you soon!<br/>Your Foerde Baumarkt team</p>
 HTML,
             <<<PLAIN
