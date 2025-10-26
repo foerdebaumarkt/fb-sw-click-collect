@@ -69,8 +69,13 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
         $email = (string) $row['email'];
         $customerName = (string) ($row['customer_name'] ?: $row['email']);
         $orderNumber = (string) $row['order_number'];
-        $customerFirstName = (string) ($row['first_name'] ?? '');
-        $customerLastName = (string) ($row['last_name'] ?? '');
+        $customerFirstName = trim((string) ($row['first_name'] ?? ''));
+        $customerLastName = trim((string) ($row['last_name'] ?? ''));
+        if ($customerFirstName === '' && $customerLastName === '' && $customerName !== '' && !filter_var($customerName, FILTER_VALIDATE_EMAIL)) {
+            $pieces = preg_split('/\s+/', trim($customerName), 2);
+            $customerFirstName = $pieces[0] ?? '';
+            $customerLastName = $pieces[1] ?? '';
+        }
 
         $typeId = $this->connection->fetchOne(
             'SELECT id FROM mail_template_type WHERE technical_name = :name',
@@ -81,39 +86,40 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
             ['typeId' => $typeId]
         ) : null;
 
-        $storeNameCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeName', $salesChannelIdHex) ?? '');
+        $storeNameCfg = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeName', $salesChannelIdHex));
         if ($storeNameCfg === '') {
-            $storeNameCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeName') ?? '');
+            $storeNameCfg = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeName'));
         }
-        $storeNameTrimmed = trim($storeNameCfg);
         $localeCode = $this->resolveLocaleCode($languageId);
-        $storeName = $storeNameTrimmed;
+        $storeName = $storeNameCfg;
         if ($storeName === '') {
             $resolvedChannelName = $this->resolveSalesChannelName($salesChannelId, $languageId);
             if ($resolvedChannelName !== null) {
-                $storeName = trim($resolvedChannelName);
+                $storeName = $this->normalizeConfigValue($resolvedChannelName);
             }
         }
         if ($storeName === '') {
             $storeName = $this->fallbackStoreName($localeCode);
         }
 
-        $storeAddressCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelIdHex) ?? '');
+        $storeAddressCfg = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelIdHex));
         if ($storeAddressCfg === '') {
-            $storeAddressCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress') ?? '');
+            $storeAddressCfg = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeAddress'));
         }
-        $storeAddressTrimmed = trim($storeAddressCfg);
-        $storeAddress = $storeAddressTrimmed;
+        $storeAddress = $storeAddressCfg;
         if ($storeAddress === '') {
-            $basicAddress = (string) ($this->systemConfig->get('core.basicInformation.address', $salesChannelIdHex) ?? $this->systemConfig->get('core.basicInformation.address') ?? '');
-            $storeAddress = trim($basicAddress);
+            $basicAddress = $this->normalizeConfigValue($this->systemConfig->get('core.basicInformation.address', $salesChannelIdHex));
+            if ($basicAddress === '') {
+                $basicAddress = $this->normalizeConfigValue($this->systemConfig->get('core.basicInformation.address'));
+            }
+            $storeAddress = $basicAddress;
         }
 
-        $openingHoursCfgRaw = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelIdHex) ?? '');
+        $openingHoursCfgRaw = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelIdHex));
         if ($openingHoursCfgRaw === '') {
-            $openingHoursCfgRaw = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours') ?? '');
+            $openingHoursCfgRaw = $this->normalizeConfigValue($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours'));
         }
-        $openingHoursCfg = trim($openingHoursCfgRaw);
+        $openingHoursCfg = $openingHoursCfgRaw;
         $pickupWindowDays = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupWindowDays', $salesChannelIdHex) ?? 2);
         $pickupPreparationHours = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupPreparationHours', $salesChannelIdHex) ?? 4);
 
@@ -310,5 +316,31 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
         }
 
         return 'Your store';
+    }
+
+    private function normalizeConfigValue(mixed $value): string
+    {
+        if (!is_string($value)) {
+            return '';
+        }
+
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return '';
+        }
+
+        if (preg_match('/^\$+$/', $trimmed) === 1) {
+            return '';
+        }
+
+        if (preg_match('/^\$\{.*\}$/', $trimmed) === 1) {
+            return '';
+        }
+
+        if ($trimmed === '-' || $trimmed === '--' || strcasecmp($trimmed, 'n/a') === 0) {
+            return '';
+        }
+
+        return $trimmed;
     }
 }
