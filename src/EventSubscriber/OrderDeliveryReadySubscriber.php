@@ -67,22 +67,29 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
         $languageIdHex = is_string($languageId) ? Uuid::fromBytesToHex($languageId) : null;
         $email = (string) $row['email'];
         $customerName = (string) ($row['customer_name'] ?: $row['email']);
-    $orderNumber = (string) $row['order_number'];
-    $customerFirstName = (string) ($row['first_name'] ?? '');
-    $customerLastName = (string) ($row['last_name'] ?? '');
+        $orderNumber = (string) $row['order_number'];
+        $customerFirstName = (string) ($row['first_name'] ?? '');
+        $customerLastName = (string) ($row['last_name'] ?? '');
 
-            $typeId = $this->connection->fetchOne(
-                'SELECT id FROM mail_template_type WHERE technical_name = :name',
-                ['name' => 'fb_click_collect.ready']
-            );
+        $typeId = $this->connection->fetchOne(
+            'SELECT id FROM mail_template_type WHERE technical_name = :name',
+            ['name' => 'fb_click_collect.ready']
+        );
         $templateId = $typeId ? $this->connection->fetchOne(
             'SELECT id FROM mail_template WHERE mail_template_type_id = :typeId ORDER BY created_at DESC LIMIT 1',
             ['typeId' => $typeId]
         ) : null;
 
-        $storeName = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeName', $salesChannelIdHex) ?? 'Ihr Markt');
-        $storeAddress = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelIdHex) ?? '');
-        $openingHoursCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelIdHex) ?? '');
+        $storeNameCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeName', $salesChannelIdHex) ?? '');
+        $storeNameTrimmed = trim($storeNameCfg);
+        $storeName = $storeNameTrimmed !== '' ? $storeNameTrimmed : 'Ihr Markt';
+
+        $storeAddressCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelIdHex) ?? '');
+        $storeAddressTrimmed = trim($storeAddressCfg);
+        $storeAddress = $storeAddressTrimmed !== '' ? $storeAddressTrimmed : '';
+
+        $openingHoursCfgRaw = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelIdHex) ?? '');
+        $openingHoursCfg = trim($openingHoursCfgRaw);
         $pickupWindowDays = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupWindowDays', $salesChannelIdHex) ?? 2);
         $pickupPreparationHours = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupPreparationHours', $salesChannelIdHex) ?? 4);
 
@@ -141,8 +148,8 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
             ],
             'config' => [
                 'storeName' => $storeName,
-                'storeAddress' => $storeAddress,
-                'openingHours' => $openingHoursCfg,
+                'storeAddress' => $storeAddress !== '' ? $storeAddress : null,
+                'openingHours' => $openingHoursCfg !== '' ? $openingHoursCfg : null,
                 'pickupWindowDays' => $pickupWindowDays,
                 'pickupPreparationHours' => $pickupPreparationHours,
             ],
