@@ -1,68 +1,7 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Neue Click & Collect Bestellung</title>
-  </head>
-  <body>
-    <h2>Neue Click & Collect Bestellung</h2>
+{#
+  Staff notifications are now backed by the Shopware mail template type
+  `fb_click_collect.staff_notification`. This view remains in place so legacy
+  overrides keep working, but it no longer renders anything directly.
+#}
 
-    <p>
-      Bestellung <strong>#{{ order.orderNumber }}</strong> wurde soeben aufgegeben
-      und ist als <strong>Abholung im Markt</strong> markiert.
-    </p>
-
-    <h3>Kunde</h3>
-    <p>
-      {% set oc = order.orderCustomer %}
-      {% if oc %}
-        {{ oc.firstName }} {{ oc.lastName }}<br/>
-        {{ oc.email }}
-      {% else %}
-        –
-      {% endif %}
-    </p>
-
-    <h3>Positionen</h3>
-    <table width="100%" cellpadding="4" cellspacing="0" border="1" style="border-collapse: collapse;">
-      <thead>
-        <tr>
-          <th align="left">Artikel</th>
-          <th align="right">Menge</th>
-          <th align="right">Preis</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in order.lineItems %}
-          <tr>
-            <td>{{ item.label }}</td>
-            <td align="right">{{ item.quantity }}</td>
-            <td align="right">{{ item.price.unitPrice|number_format(2, ',', '.') }}&nbsp;€</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="2" align="right"><strong>Gesamtsumme</strong></td>
-          <td align="right"><strong>{{ order.amountTotal|number_format(2, ',', '.') }}&nbsp;€</strong></td>
-        </tr>
-      </tfoot>
-    </table>
-
-    <h3>Abhol-Hinweise</h3>
-    <p>
-      Bitte bereiten Sie die Bestellung innerhalb von <strong>{{ prepHours }}</strong> Stunden vor.
-      Die Abholung ist für <strong>{{ pickupDays }}</strong> Tage möglich.
-    </p>
-
-    <h3>Markt</h3>
-    <p>
-      {% if storeName %}<strong>{{ storeName }}</strong><br/>{% endif %}
-      {% if storeAddress %}{{ storeAddress|nl2br }}<br/>{% endif %}
-      {% if openingHours %}<em>Öffnungszeiten:</em><br/>{{ openingHours|nl2br }}{% endif %}
-    </p>
-
-    <hr/>
-    <p style="color:#666; font-size:12px;">Diese E-Mail wurde automatisch vom Click & Collect Plugin generiert.</p>
-  </body>
-</html>
+{% block foerde_click_collect_staff_notification %}{% endblock %}

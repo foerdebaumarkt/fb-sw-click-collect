@@ -2,8 +2,8 @@
 
 namespace FoerdeClickCollect\EventSubscriber;
 
-use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Checkout\Cart\Event\CheckoutOrderPlacedEvent;
+use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -11,15 +11,19 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Core\Content\Mail\Service\MailService;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Twig\Environment as TwigEnvironment;
+use Shopware\Core\Content\MailTemplate\Aggregate\MailTemplateType\MailTemplateTypeEntity;
+use Shopware\Core\Content\MailTemplate\MailTemplateEntity;
 
 class OrderPlacedSubscriber implements EventSubscriberInterface
 {
+    private const STAFF_TEMPLATE_TYPE = 'fb_click_collect.staff_notification';
+    private ?string $cachedStaffTemplateId = null;
+
     public function __construct(
         private readonly EntityRepository $orderRepository,
         private readonly SystemConfigService $systemConfig,
         private readonly MailService $mailService,
-        private readonly TwigEnvironment $twig
+        private readonly EntityRepository $mailTemplateTypeRepository
     ) {
     }
 
@@ -59,32 +63,38 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
         $storeAddress = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelId) ?? '');
         $openingHours = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelId) ?? '');
 
-        try {
-            $html = $this->twig->render('@FoerdeClickCollect/email/click_collect_staff_order_placed.html.twig', [
-                'order' => $order,
-                'pickupDays' => $pickupDays,
+        $templateId = $this->resolveStaffTemplateId($context);
+        if (!$templateId) {
+            error_log('[FoerdeClickCollect] no staff mail template registered; skipping notification');
+            return;
+        }
+
+        $templateData = [
+            'order' => $order,
+            'config' => [
+                'pickupWindowDays' => $pickupDays,
                 'prepHours' => $prepHours,
                 'storeName' => $storeName,
                 'storeAddress' => $storeAddress,
                 'openingHours' => $openingHours,
-            ]);
-        } catch (\Throwable $e) {
-            error_log('[FoerdeClickCollect] staff mail render failed: ' . $e->getMessage());
-            return;
-        }
-
-        $subject = sprintf('Neue Click & Collect Bestellung #%s', $order->getOrderNumber());
-
-        $data = [
-            'recipients' => [ $storeEmail => $storeName ?: 'Store' ],
-            'senderName' => 'Click & Collect',
-            'contentHtml' => $html,
-            'subject' => $subject,
-            'salesChannelId' => $salesChannelId,
+            ],
         ];
 
+        $senderName = (string) ($this->systemConfig->get('core.mailerSettings.senderName', $salesChannelId) ?? 'Click & Collect');
+        $senderEmail = (string) ($this->systemConfig->get('core.mailerSettings.senderAddress', $salesChannelId) ?? '');
+
+        $data = [
+            'templateId' => $templateId,
+            'recipients' => [$storeEmail => $storeName ?: 'Store'],
+            'senderName' => $senderName,
+            'salesChannelId' => $salesChannelId,
+        ];
+        if ($senderEmail !== '') {
+            $data['senderEmail'] = $senderEmail;
+        }
+
         try {
-            $this->mailService->send($data, $context, $salesChannelId);
+            $this->mailService->send($data, $context, $templateData);
         } catch (\Throwable $e) {
             error_log('[FoerdeClickCollect] staff mail send failed: ' . $e->getMessage());
         }
@@ -101,5 +111,35 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
         /** @var OrderEntity|null $order */
         $order = $this->orderRepository->search($criteria, $context)->first();
         return $order;
+    }
+
+    private function resolveStaffTemplateId(Context $context): ?string
+    {
+        if ($this->cachedStaffTemplateId !== null) {
+            return $this->cachedStaffTemplateId;
+        }
+
+        $criteria = (new Criteria())
+            ->addFilter(new EqualsFilter('technicalName', self::STAFF_TEMPLATE_TYPE))
+            ->addAssociation('mailTemplates')
+            ->setLimit(1);
+
+        /** @var MailTemplateTypeEntity|null $type */
+        $type = $this->mailTemplateTypeRepository->search($criteria, $context)->first();
+        if (!$type) {
+            return null;
+        }
+
+        $mailTemplates = $type->getMailTemplates();
+        if (!$mailTemplates || $mailTemplates->count() === 0) {
+            return null;
+        }
+
+        /** @var MailTemplateEntity|null $template */
+        $template = $mailTemplates->first();
+
+        $this->cachedStaffTemplateId = $template?->getId();
+
+        return $this->cachedStaffTemplateId;
     }
 }

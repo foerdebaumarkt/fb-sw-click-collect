@@ -18,6 +18,146 @@ class FoerdeClickCollect extends Plugin
 {
     private const TECHNICAL_NAME = 'click_collect';
     private const DISPLAY_NAME = 'Click & Collect';
+    private const STAFF_TEMPLATE_TYPE = 'fb_click_collect.staff_notification';
+
+    private const STAFF_TEMPLATE_SUBJECT_DE = 'Neue Click & Collect Bestellung #{{ order.orderNumber }}';
+    private const STAFF_TEMPLATE_SUBJECT_EN = 'New Click & Collect order #{{ order.orderNumber }}';
+
+    private const STAFF_TEMPLATE_HTML_DE = <<<'HTML'
+<p>Hallo Team,</p>
+<p>es liegt eine neue Click & Collect Bestellung <strong>#{{ order.orderNumber }}</strong> vor, die als Abholung im Markt markiert ist.</p>
+<h3>Kundendaten</h3>
+{% set oc = order.orderCustomer %}
+<p>{% if oc %}{{ oc.firstName }} {{ oc.lastName }}<br/>{{ oc.email }}{% else %}–{% endif %}</p>
+<h3>Bestellpositionen</h3>
+<table width="100%" cellpadding="4" cellspacing="0" border="1" style="border-collapse:collapse;">
+  <thead>
+    <tr>
+      <th align="left">Artikel</th>
+      <th align="right">Menge</th>
+      <th align="right">Preis</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in order.lineItems %}
+      <tr>
+        <td>{{ item.label }}</td>
+        <td align="right">{{ item.quantity }}</td>
+        <td align="right">{{ item.price.unitPrice|number_format(2, ',', '.') }}&nbsp;€</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2" align="right"><strong>Gesamtsumme</strong></td>
+      <td align="right"><strong>{{ order.amountTotal|number_format(2, ',', '.') }}&nbsp;€</strong></td>
+    </tr>
+  </tfoot>
+</table>
+<h3>Abholhinweise</h3>
+<p>Bitte bereitet die Bestellung innerhalb von <strong>{{ config.prepHours }}</strong> Stunden vor. Die Abholung ist für <strong>{{ config.pickupWindowDays }}</strong> Tage möglich.</p>
+<h3>Markt</h3>
+<p>{% if config.storeName %}<strong>{{ config.storeName }}</strong><br/>{% endif %}
+{% if config.storeAddress %}{{ config.storeAddress|nl2br }}<br/>{% endif %}
+{% if config.openingHours %}<em>Öffnungszeiten:</em><br/>{{ config.openingHours|nl2br }}{% endif %}</p>
+<hr/>
+<p style="color:#666; font-size:12px;">Diese E-Mail wurde automatisch vom Click & Collect Plugin generiert.</p>
+HTML;
+
+    private const STAFF_TEMPLATE_HTML_EN = <<<'HTML'
+<p>Hello team,</p>
+<p>A new Click & Collect order <strong>#{{ order.orderNumber }}</strong> has been placed and marked for in-store pickup.</p>
+<h3>Customer</h3>
+{% set oc = order.orderCustomer %}
+<p>{% if oc %}{{ oc.firstName }} {{ oc.lastName }}<br/>{{ oc.email }}{% else %}–{% endif %}</p>
+<h3>Items</h3>
+<table width="100%" cellpadding="4" cellspacing="0" border="1" style="border-collapse:collapse;">
+  <thead>
+    <tr>
+      <th align="left">Item</th>
+      <th align="right">Qty</th>
+      <th align="right">Price</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in order.lineItems %}
+      <tr>
+        <td>{{ item.label }}</td>
+        <td align="right">{{ item.quantity }}</td>
+        <td align="right">{{ item.price.unitPrice|number_format(2, '.', ',') }}&nbsp;€</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2" align="right"><strong>Total</strong></td>
+      <td align="right"><strong>{{ order.amountTotal|number_format(2, '.', ',') }}&nbsp;€</strong></td>
+    </tr>
+  </tfoot>
+</table>
+<h3>Pickup details</h3>
+<p>Please prepare the order within <strong>{{ config.prepHours }}</strong> hours. Pickup is available for <strong>{{ config.pickupWindowDays }}</strong> days.</p>
+<h3>Store</h3>
+<p>{% if config.storeName %}<strong>{{ config.storeName }}</strong><br/>{% endif %}
+{% if config.storeAddress %}{{ config.storeAddress|nl2br }}<br/>{% endif %}
+{% if config.openingHours %}<em>Opening hours:</em><br/>{{ config.openingHours|nl2br }}{% endif %}</p>
+<hr/>
+<p style="color:#666; font-size:12px;">This email was generated automatically by the Click & Collect plugin.</p>
+HTML;
+
+    private const STAFF_TEMPLATE_PLAIN_DE = <<<'TEXT'
+Hallo Team,
+
+es liegt eine neue Click & Collect Bestellung #{{ order.orderNumber }} vor, die als Abholung im Markt markiert ist.
+
+Kundendaten:
+{% set oc = order.orderCustomer %}{% if oc %}{{ oc.firstName }} {{ oc.lastName }} / {{ oc.email }}{% else %}–{% endif %}
+
+Bestellpositionen:
+{% for item in order.lineItems %}- {{ item.label }} ({{ item.quantity }} × {{ item.price.unitPrice|number_format(2, ',', '.') }} €)
+{% endfor %}
+Gesamtsumme: {{ order.amountTotal|number_format(2, ',', '.') }} €
+
+Abholhinweise:
+- Vorbereitung: {{ config.prepHours }} Stunden
+- Abholung möglich für: {{ config.pickupWindowDays }} Tage
+
+Markt:
+{% if config.storeName %}{{ config.storeName }}
+{% endif %}{% if config.storeAddress %}{{ config.storeAddress }}
+{% endif %}{% if config.openingHours %}Öffnungszeiten:
+{{ config.openingHours }}
+{% endif %}
+
+Diese E-Mail wurde automatisch vom Click & Collect Plugin generiert.
+TEXT;
+
+    private const STAFF_TEMPLATE_PLAIN_EN = <<<'TEXT'
+Hello team,
+
+A new Click & Collect order #{{ order.orderNumber }} has been placed and marked for in-store pickup.
+
+Customer:
+{% set oc = order.orderCustomer %}{% if oc %}{{ oc.firstName }} {{ oc.lastName }} / {{ oc.email }}{% else %}–{% endif %}
+
+Items:
+{% for item in order.lineItems %}- {{ item.label }} ({{ item.quantity }} × {{ item.price.unitPrice|number_format(2, '.', ',') }} €)
+{% endfor %}
+Total: {{ order.amountTotal|number_format(2, '.', ',') }} €
+
+Pickup details:
+- Preparation: {{ config.prepHours }} hours
+- Pickup window: {{ config.pickupWindowDays }} days
+
+Store:
+{% if config.storeName %}{{ config.storeName }}
+{% endif %}{% if config.storeAddress %}{{ config.storeAddress }}
+{% endif %}{% if config.openingHours %}Opening hours:
+{{ config.openingHours }}
+{% endif %}
+
+This email was generated automatically by the Click & Collect plugin.
+TEXT;
 
     public function install(InstallContext $installContext): void
     {
@@ -58,6 +198,7 @@ class FoerdeClickCollect extends Plugin
     {
         // Align the reminders scheduled task next run to configured time after install/update/activate
         $this->alignRemindersTaskNextRun();
+        $this->ensureStaffMailTemplate($context);
         /** @var EntityRepository $shippingRepo */
         $shippingRepo = $this->container->get('shipping_method.repository');
         /** @var EntityRepository $deliveryTimeRepo */
@@ -226,6 +367,77 @@ class FoerdeClickCollect extends Plugin
         } catch (\Throwable $e) {
             error_log('[FoerdeClickCollect] Linking payment to sales channels failed: ' . $e->getMessage());
         }
+    }
+
+    private function ensureStaffMailTemplate(Context $context): void
+    {
+        /** @var EntityRepository $typeRepo */
+        $typeRepo = $this->container->get('mail_template_type.repository');
+        /** @var EntityRepository $templateRepo */
+        $templateRepo = $this->container->get('mail_template.repository');
+
+        $typeCriteria = (new Criteria())
+            ->addFilter(new EqualsFilter('technicalName', self::STAFF_TEMPLATE_TYPE))
+            ->setLimit(1);
+        $existingType = $typeRepo->search($typeCriteria, $context)->first();
+        $typeId = $existingType?->getId() ?? Uuid::randomHex();
+
+        $typeRepo->upsert([
+            [
+                'id' => $typeId,
+                'technicalName' => self::STAFF_TEMPLATE_TYPE,
+                'availableEntities' => [
+                    'order' => 'order',
+                    'config' => 'json_object',
+                ],
+                'name' => 'Click & Collect: Staff notification',
+                'translations' => [
+                    Defaults::LANGUAGE_SYSTEM => [
+                        'name' => 'Click & Collect: Staff notification',
+                    ],
+                    'en-GB' => [
+                        'name' => 'Click & Collect: Staff notification',
+                    ],
+                    'de-DE' => [
+                        'name' => 'Click & Collect: Team-Benachrichtigung',
+                    ],
+                ],
+            ],
+        ], $context);
+
+        $templateCriteria = (new Criteria())
+            ->addFilter(new EqualsFilter('mailTemplateTypeId', $typeId))
+            ->setLimit(1);
+        $existingTemplate = $templateRepo->search($templateCriteria, $context)->first();
+        $templateId = $existingTemplate?->getId() ?? Uuid::randomHex();
+
+        $templateRepo->upsert([
+            [
+                'id' => $templateId,
+                'mailTemplateTypeId' => $typeId,
+                'systemDefault' => false,
+                'subject' => self::STAFF_TEMPLATE_SUBJECT_EN,
+                'contentHtml' => self::STAFF_TEMPLATE_HTML_EN,
+                'contentPlain' => self::STAFF_TEMPLATE_PLAIN_EN,
+                'translations' => [
+                    Defaults::LANGUAGE_SYSTEM => [
+                        'subject' => self::STAFF_TEMPLATE_SUBJECT_EN,
+                        'contentHtml' => self::STAFF_TEMPLATE_HTML_EN,
+                        'contentPlain' => self::STAFF_TEMPLATE_PLAIN_EN,
+                    ],
+                    'en-GB' => [
+                        'subject' => self::STAFF_TEMPLATE_SUBJECT_EN,
+                        'contentHtml' => self::STAFF_TEMPLATE_HTML_EN,
+                        'contentPlain' => self::STAFF_TEMPLATE_PLAIN_EN,
+                    ],
+                    'de-DE' => [
+                        'subject' => self::STAFF_TEMPLATE_SUBJECT_DE,
+                        'contentHtml' => self::STAFF_TEMPLATE_HTML_DE,
+                        'contentPlain' => self::STAFF_TEMPLATE_PLAIN_DE,
+                    ],
+                ],
+            ],
+        ], $context);
     }
 
     private function ensureDeliveryTime(EntityRepository $deliveryTimeRepo, Context $context): string
