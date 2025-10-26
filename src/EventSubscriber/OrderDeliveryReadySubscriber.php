@@ -200,17 +200,17 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
             ]);
 
             $openingHtml = $openingHoursCfg !== ''
-                ? '<br/><em>Öffnungszeiten:</em><br/>' . nl2br(htmlspecialchars($openingHoursCfg))
+                ? '<br/><em>Oeffnungszeiten:</em><br/>' . nl2br(htmlspecialchars($openingHoursCfg))
                 : '';
             $fallbackHtml = sprintf(
                 '<p>Hallo %s,</p>' .
-                '<p>Ihre Click & Collect Bestellung <strong>#%s</strong> ist abholbereit und liegt für Sie im Markt bereit.</p>' .
+                '<p>Ihre Click & Collect Bestellung <strong>#%s</strong> ist abholbereit und liegt fuer Sie im Markt bereit.</p>' .
                 '<p><strong>Abholung</strong><br/>%s<br/>%s%s</p>' .
                 '<p><strong>Bitte mitbringen</strong></p>' .
-                '<ul><li>Bestellnummer <strong>#%s</strong></li><li>Diese E‑Mail (optional)</li></ul>' .
-                '<p><strong>Hinweis</strong><br/>Zur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.</p>' .
+                '<ul><li>Bestellnummer <strong>#%s</strong></li><li>Diese E-Mail (optional)</li></ul>' .
+                '<p><strong>Hinweis</strong><br/>Zur Abholung genuegt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.</p>' .
                 '<p><strong>Abholhinweise</strong><br/>Bitte holen Sie die Ware innerhalb von <strong>%d</strong> Tagen ab.</p>' .
-                '<p>Vielen Dank und bis bald!<br/>Ihr Förde Baumarkt Team</p>',
+                '<p>Vielen Dank und bis bald!<br/>Ihr Foerde Baumarkt Team</p>',
                 htmlspecialchars($customerName),
                 htmlspecialchars($orderNumber),
                 htmlspecialchars($storeName),
@@ -221,16 +221,16 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
             );
 
             $openingPlain = $openingHoursCfg !== ''
-                ? "\n\nÖffnungszeiten:\n" . $openingHoursCfg
+                ? "\n\nOeffnungszeiten:\n" . $openingHoursCfg
                 : '';
             $fallbackText = sprintf(
                 "Hallo %s\n\n" .
-                "Ihre Click & Collect Bestellung #%s ist abholbereit und liegt für Sie im Markt bereit.\n\n" .
+                "Ihre Click & Collect Bestellung #%s ist abholbereit und liegt fuer Sie im Markt bereit.\n\n" .
                 "Abholung:\n%s\n%s%s\n\n" .
-                "Bitte mitbringen:\n- Bestellnummer #%s\n- Diese E‑Mail (optional)\n\n" .
-                "Hinweis:\nZur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.\n\n" .
+                "Bitte mitbringen:\n- Bestellnummer #%s\n- Diese E-Mail (optional)\n\n" .
+                "Hinweis:\nZur Abholung genuegt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.\n\n" .
                 "Abholhinweise:\nBitte holen Sie die Ware innerhalb von %d Tagen ab.\n\n" .
-                "Vielen Dank und bis bald!\nIhr Förde Baumarkt Team\n",
+                "Vielen Dank und bis bald!\nIhr Foerde Baumarkt Team\n",
                 $customerName,
                 $orderNumber,
                 $storeName,
