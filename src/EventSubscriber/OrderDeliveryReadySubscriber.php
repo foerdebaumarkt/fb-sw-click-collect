@@ -5,6 +5,7 @@ namespace FoerdeClickCollect\EventSubscriber;
 use Doctrine\DBAL\Connection;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Content\Mail\Service\MailService;
+use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\Framework\Validation\Exception\ConstraintViolationException;
 use Shopware\Core\System\StateMachine\Event\StateMachineTransitionEvent;
@@ -81,14 +82,37 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
         ) : null;
 
         $storeNameCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeName', $salesChannelIdHex) ?? '');
+        if ($storeNameCfg === '') {
+            $storeNameCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeName') ?? '');
+        }
         $storeNameTrimmed = trim($storeNameCfg);
-        $storeName = $storeNameTrimmed !== '' ? $storeNameTrimmed : 'Ihr Markt';
+        $localeCode = $this->resolveLocaleCode($languageId);
+        $storeName = $storeNameTrimmed;
+        if ($storeName === '') {
+            $resolvedChannelName = $this->resolveSalesChannelName($salesChannelId, $languageId);
+            if ($resolvedChannelName !== null) {
+                $storeName = trim($resolvedChannelName);
+            }
+        }
+        if ($storeName === '') {
+            $storeName = $this->fallbackStoreName($localeCode);
+        }
 
         $storeAddressCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelIdHex) ?? '');
+        if ($storeAddressCfg === '') {
+            $storeAddressCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress') ?? '');
+        }
         $storeAddressTrimmed = trim($storeAddressCfg);
-        $storeAddress = $storeAddressTrimmed !== '' ? $storeAddressTrimmed : '';
+        $storeAddress = $storeAddressTrimmed;
+        if ($storeAddress === '') {
+            $basicAddress = (string) ($this->systemConfig->get('core.basicInformation.address', $salesChannelIdHex) ?? $this->systemConfig->get('core.basicInformation.address') ?? '');
+            $storeAddress = trim($basicAddress);
+        }
 
         $openingHoursCfgRaw = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelIdHex) ?? '');
+        if ($openingHoursCfgRaw === '') {
+            $openingHoursCfgRaw = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours') ?? '');
+        }
         $openingHoursCfg = trim($openingHoursCfgRaw);
         $pickupWindowDays = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupWindowDays', $salesChannelIdHex) ?? 2);
         $pickupPreparationHours = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupPreparationHours', $salesChannelIdHex) ?? 4);
@@ -242,5 +266,49 @@ class OrderDeliveryReadySubscriber implements EventSubscriberInterface
                 'email' => $email,
             ]);
         }
+    }
+
+    private function resolveLocaleCode(?string $languageId): ?string
+    {
+        $languageBytes = $languageId;
+        if (!$languageBytes) {
+            $languageBytes = Uuid::fromHexToBytes(Defaults::LANGUAGE_SYSTEM);
+        }
+
+        $code = $this->connection->fetchOne(
+            'SELECT locale.code FROM language INNER JOIN locale ON locale.id = language.locale_id WHERE language.id = :id',
+            ['id' => $languageBytes]
+        );
+
+        return is_string($code) && $code !== '' ? $code : null;
+    }
+
+    private function resolveSalesChannelName(string $salesChannelId, ?string $languageId): ?string
+    {
+        $languageBytes = $languageId ?: Uuid::fromHexToBytes(Defaults::LANGUAGE_SYSTEM);
+
+        $name = $this->connection->fetchOne(
+            'SELECT name FROM sales_channel_translation WHERE sales_channel_id = :sid AND language_id = :lid',
+            ['sid' => $salesChannelId, 'lid' => $languageBytes]
+        );
+
+        if (!is_string($name) || trim($name) === '') {
+            $fallbackLang = Uuid::fromHexToBytes(Defaults::LANGUAGE_SYSTEM);
+            $name = $this->connection->fetchOne(
+                'SELECT name FROM sales_channel_translation WHERE sales_channel_id = :sid AND language_id = :lid',
+                ['sid' => $salesChannelId, 'lid' => $fallbackLang]
+            );
+        }
+
+        return is_string($name) ? $name : null;
+    }
+
+    private function fallbackStoreName(?string $localeCode): string
+    {
+        if (is_string($localeCode) && str_starts_with($localeCode, 'de')) {
+            return 'Ihr Markt';
+        }
+
+        return 'Your store';
     }
 }
