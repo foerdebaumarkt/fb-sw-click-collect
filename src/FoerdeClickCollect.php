@@ -18,14 +18,14 @@ class FoerdeClickCollect extends Plugin
 {
     private const TECHNICAL_NAME = 'click_collect';
     private const DISPLAY_NAME = 'Click & Collect';
-    private const STAFF_TEMPLATE_TYPE = 'fb_click_collect.staff_notification';
+    private const STAFF_TEMPLATE_TYPE = 'fb_click_collect.staff_order_placed';
 
-    private const STAFF_TEMPLATE_SUBJECT_DE = 'Neue Click & Collect Bestellung #{{ order.orderNumber }}';
-    private const STAFF_TEMPLATE_SUBJECT_EN = 'New Click & Collect order #{{ order.orderNumber }}';
+    private const STAFF_TEMPLATE_SUBJECT_DE = 'Neue Click & Collect Bestellung #{{ orderNumber }}';
+    private const STAFF_TEMPLATE_SUBJECT_EN = 'New Click & Collect order #{{ orderNumber }}';
 
     private const STAFF_TEMPLATE_HTML_DE = <<<'HTML'
 <p>Hallo Team,</p>
-<p>es liegt eine neue Click & Collect Bestellung <strong>#{{ order.orderNumber }}</strong> vor, die als Abholung im Markt markiert ist.</p>
+<p>es liegt eine neue Click & Collect Bestellung <strong>#{{ orderNumber }}</strong> vor, die als Abholung im Markt markiert ist.</p>
 <h3>Kundendaten</h3>
 {% set oc = order.orderCustomer %}
 <p>{% if oc %}{{ oc.firstName }} {{ oc.lastName }}<br/>{{ oc.email }}{% else %}–{% endif %}</p>
@@ -55,7 +55,7 @@ class FoerdeClickCollect extends Plugin
   </tfoot>
 </table>
 <h3>Abholhinweise</h3>
-<p>Bitte bereitet die Bestellung innerhalb von <strong>{{ config.prepHours }}</strong> Stunden vor. Die Abholung ist für <strong>{{ config.pickupWindowDays }}</strong> Tage möglich.</p>
+<p>Bitte bereitet die Bestellung innerhalb von <strong>{{ config.pickupPreparationHours }}</strong> Stunden vor. Die Abholung ist für <strong>{{ config.pickupWindowDays }}</strong> Tage möglich.</p>
 <h3>Markt</h3>
 <p>{% if config.storeName %}<strong>{{ config.storeName }}</strong><br/>{% endif %}
 {% if config.storeAddress %}{{ config.storeAddress|nl2br }}<br/>{% endif %}
@@ -66,7 +66,7 @@ HTML;
 
     private const STAFF_TEMPLATE_HTML_EN = <<<'HTML'
 <p>Hello team,</p>
-<p>A new Click & Collect order <strong>#{{ order.orderNumber }}</strong> has been placed and marked for in-store pickup.</p>
+<p>A new Click & Collect order <strong>#{{ orderNumber }}</strong> has been placed and marked for in-store pickup.</p>
 <h3>Customer</h3>
 {% set oc = order.orderCustomer %}
 <p>{% if oc %}{{ oc.firstName }} {{ oc.lastName }}<br/>{{ oc.email }}{% else %}–{% endif %}</p>
@@ -96,7 +96,7 @@ HTML;
   </tfoot>
 </table>
 <h3>Pickup details</h3>
-<p>Please prepare the order within <strong>{{ config.prepHours }}</strong> hours. Pickup is available for <strong>{{ config.pickupWindowDays }}</strong> days.</p>
+<p>Please prepare the order within <strong>{{ config.pickupPreparationHours }}</strong> hours. Pickup is available for <strong>{{ config.pickupWindowDays }}</strong> days.</p>
 <h3>Store</h3>
 <p>{% if config.storeName %}<strong>{{ config.storeName }}</strong><br/>{% endif %}
 {% if config.storeAddress %}{{ config.storeAddress|nl2br }}<br/>{% endif %}
@@ -108,7 +108,7 @@ HTML;
     private const STAFF_TEMPLATE_PLAIN_DE = <<<'TEXT'
 Hallo Team,
 
-es liegt eine neue Click & Collect Bestellung #{{ order.orderNumber }} vor, die als Abholung im Markt markiert ist.
+es liegt eine neue Click & Collect Bestellung #{{ orderNumber }} vor, die als Abholung im Markt markiert ist.
 
 Kundendaten:
 {% set oc = order.orderCustomer %}{% if oc %}{{ oc.firstName }} {{ oc.lastName }} / {{ oc.email }}{% else %}–{% endif %}
@@ -119,7 +119,7 @@ Bestellpositionen:
 Gesamtsumme: {{ order.amountTotal|number_format(2, ',', '.') }} €
 
 Abholhinweise:
-- Vorbereitung: {{ config.prepHours }} Stunden
+- Vorbereitung: {{ config.pickupPreparationHours }} Stunden
 - Abholung möglich für: {{ config.pickupWindowDays }} Tage
 
 Markt:
@@ -135,7 +135,7 @@ TEXT;
     private const STAFF_TEMPLATE_PLAIN_EN = <<<'TEXT'
 Hello team,
 
-A new Click & Collect order #{{ order.orderNumber }} has been placed and marked for in-store pickup.
+A new Click & Collect order #{{ orderNumber }} has been placed and marked for in-store pickup.
 
 Customer:
 {% set oc = order.orderCustomer %}{% if oc %}{{ oc.firstName }} {{ oc.lastName }} / {{ oc.email }}{% else %}–{% endif %}
@@ -146,7 +146,7 @@ Items:
 Total: {{ order.amountTotal|number_format(2, '.', ',') }} €
 
 Pickup details:
-- Preparation: {{ config.prepHours }} hours
+- Preparation: {{ config.pickupPreparationHours }} hours
 - Pickup window: {{ config.pickupWindowDays }} days
 
 Store:
@@ -388,7 +388,9 @@ TEXT;
                 'technicalName' => self::STAFF_TEMPLATE_TYPE,
                 'availableEntities' => [
                     'order' => 'order',
-                    'config' => 'json_object',
+                    'order_delivery' => 'order_delivery',
+                    'sales_channel' => 'sales_channel',
+                    'customer' => 'customer',
                 ],
                 'name' => 'Click & Collect: Staff notification',
                 'translations' => [
@@ -415,7 +417,7 @@ TEXT;
             [
                 'id' => $templateId,
                 'mailTemplateTypeId' => $typeId,
-                'systemDefault' => false,
+                'systemDefault' => true,
                 'subject' => self::STAFF_TEMPLATE_SUBJECT_EN,
                 'contentHtml' => self::STAFF_TEMPLATE_HTML_EN,
                 'contentPlain' => self::STAFF_TEMPLATE_PLAIN_EN,

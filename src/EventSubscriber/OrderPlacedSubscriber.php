@@ -16,7 +16,7 @@ use Shopware\Core\Content\MailTemplate\MailTemplateEntity;
 
 class OrderPlacedSubscriber implements EventSubscriberInterface
 {
-    private const STAFF_TEMPLATE_TYPE = 'fb_click_collect.staff_notification';
+    private const STAFF_TEMPLATE_TYPE = 'fb_click_collect.staff_order_placed';
     private ?string $cachedStaffTemplateId = null;
 
     public function __construct(
@@ -70,10 +70,11 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
         }
 
         $templateData = [
+            'orderNumber' => $order->getOrderNumber(),
             'order' => $order,
             'config' => [
                 'pickupWindowDays' => $pickupDays,
-                'prepHours' => $prepHours,
+                'pickupPreparationHours' => $prepHours,
                 'storeName' => $storeName,
                 'storeAddress' => $storeAddress,
                 'openingHours' => $openingHours,
