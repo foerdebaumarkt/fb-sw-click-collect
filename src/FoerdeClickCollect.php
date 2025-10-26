@@ -56,6 +56,8 @@ class FoerdeClickCollect extends Plugin
 
     private function provision(Context $context): void
     {
+        // Align the reminders scheduled task next run to configured time after install/update/activate
+        $this->alignRemindersTaskNextRun();
         /** @var EntityRepository $shippingRepo */
         $shippingRepo = $this->container->get('shipping_method.repository');
         /** @var EntityRepository $deliveryTimeRepo */
@@ -269,5 +271,55 @@ class FoerdeClickCollect extends Plugin
         $criteria = (new Criteria())->addFilter(new EqualsFilter('technicalName', $technicalName))->setLimit(1);
         $entity = $paymentRepo->search($criteria, $context)->first();
         return $entity ? $entity->getId() : null;
+    }
+
+    private function alignRemindersTaskNextRun(): void
+    {
+        try {
+            /** @var EntityRepository $taskRepo */
+            $taskRepo = $this->container->get('scheduled_task.repository');
+            /** @var \Shopware\Core\System\SystemConfig\SystemConfigService $systemConfig */
+            $systemConfig = $this->container->get(\Shopware\Core\System\SystemConfig\SystemConfigService::class);
+
+            $criteria = (new Criteria())
+                ->addFilter(new EqualsFilter('name', \FoerdeClickCollect\ScheduledTask\SendRemindersTask::getTaskName()))
+                ->setLimit(1);
+            $ctx = Context::createDefaultContext();
+            $task = $taskRepo->search($criteria, $ctx)->first();
+            if (!$task) {
+                return;
+            }
+
+            $timeStr = (string) ($systemConfig->get('FoerdeClickCollect.config.reminderRunTime') ?? '06:00');
+            if (!preg_match('/^(\d{1,2}):(\d{2})$/', $timeStr, $m)) {
+                $m = [null, '06', '00'];
+            }
+            $hour = min(23, max(0, (int) $m[1]));
+            $minute = min(59, max(0, (int) $m[2]));
+
+            $tzId = (string) ($systemConfig->get('core.basicInformation.timezone') ?? 'Europe/Berlin');
+            try {
+                $tz = new \DateTimeZone($tzId);
+            } catch (\Throwable) {
+                $tz = new \DateTimeZone('Europe/Berlin');
+            }
+
+            $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+            $nowLocal = $nowUtc->setTimezone($tz);
+            $targetLocal = $nowLocal->setTime($hour, $minute, 0);
+            if ($targetLocal <= $nowLocal) {
+                $targetLocal = $targetLocal->modify('+1 day');
+            }
+            $targetUtc = $targetLocal->setTimezone(new \DateTimeZone('UTC'));
+
+            $taskRepo->update([[
+                'id' => $task->getUniqueIdentifier(),
+                'runInterval' => 86400,
+                'nextExecutionTime' => $targetUtc,
+            ]], $ctx);
+        } catch (\Throwable $e) {
+            // non-fatal: scheduling will still run daily, just not aligned to time-of-day until first execution
+            error_log('[FoerdeClickCollect] Failed to align reminders task next run: ' . $e->getMessage());
+        }
     }
 }
