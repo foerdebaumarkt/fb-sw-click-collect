@@ -33,14 +33,14 @@
 
         <!-- Scheduled task handler to send reminders daily -->
         <service id="FoerdeClickCollect\ScheduledTask\SendRemindersTaskHandler">
-            <argument type="service" id="shopware.repository.scheduled_task"/>
+            <argument type="service" id="scheduled_task.repository"/>
             <tag name="shopware.scheduled.task.handler"/>
         </service>
 
         <!-- Align schedule when config/timezone changes -->
         <service id="FoerdeClickCollect\EventSubscriber\SystemConfigSubscriber">
             <tag name="kernel.event_subscriber"/>
-            <argument type="service" id="shopware.repository.scheduled_task"/>
+            <argument type="service" id="scheduled_task.repository"/>
         </service>
 
         <!-- Test-only controller to trigger reminders via Admin API in dev/test -->

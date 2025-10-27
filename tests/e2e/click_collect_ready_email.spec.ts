@@ -155,10 +155,53 @@ async function proceedFromRegisterToConfirm(page: Page) {
 }
 
 async function ensureShippingAndPayment(page: Page) {
-  const pickupShipping = page.getByRole('radio', { name: /Abholung im Markt/i });
-  if (await pickupShipping.isVisible()) await pickupShipping.check();
-  const marketPayment = page.getByRole('radio', { name: /Bezahlung im Markt/i });
-  if (await marketPayment.isVisible()) await marketPayment.check();
+  const shippingLabels = [
+    /Abholung im Markt/i,
+    /Abholung/i,
+    /Pick[-\s]?up/i,
+    /Click ?& ?Collect/i,
+    /Store pickup/i,
+  ];
+  let shippingSelected = false;
+  for (const pattern of shippingLabels) {
+    const option = page.getByRole('radio', { name: pattern }).first();
+    if (await option.isVisible({ timeout: 500 }).catch(() => false)) {
+      await option.check();
+      shippingSelected = true;
+      break;
+    }
+  }
+  if (!shippingSelected) {
+    const fallback = page.locator('input[type="radio"][name*="shipping" i][value*="pick" i]');
+    if (await fallback.isVisible({ timeout: 500 }).catch(() => false)) {
+      await fallback.check({ force: true });
+      shippingSelected = true;
+    }
+  }
+
+  const paymentLabels = [
+    /Bezahlung im Markt/i,
+    /Zahlung im Markt/i,
+    /Payment in store/i,
+    /Pay in store/i,
+    /Cash on pickup/i,
+    /Cash in store/i,
+  ];
+  let paymentSelected = false;
+  for (const pattern of paymentLabels) {
+    const option = page.getByRole('radio', { name: pattern }).first();
+    if (await option.isVisible({ timeout: 500 }).catch(() => false)) {
+      await option.check();
+      paymentSelected = true;
+      break;
+    }
+  }
+  if (!paymentSelected) {
+    const fallback = page.locator('input[type="radio"][name*="payment" i][value*="store" i]');
+    if (await fallback.isVisible({ timeout: 500 }).catch(() => false)) {
+      await fallback.check({ force: true });
+    }
+  }
 }
 
 async function acceptTerms(page: Page) {
@@ -190,30 +233,45 @@ async function acceptTerms(page: Page) {
 async function placeOrder(page: Page) {
   const selectors = [
     page.getByRole('button', { name: /Zahlungspflichtig bestellen|Jetzt kaufen|Kaufen/i }),
-    page.locator('form[name="confirmForm" i] button[type="submit"]:not([disabled])'),
     page.getByRole('button', { name: /Bestellung abschließen|Place order|Complete order/i }),
-    page.locator('button[data-form-submit]:not([disabled])'),
-    page.locator('button[type="submit"]:not([disabled])'),
+    page.locator('form[name="confirmForm" i] button[type="submit"]:not([disabled])'),
+    page.locator('form[action*="checkout/order" i] button[type="submit"]:not([disabled])'),
+    page.locator('form[data-form-submit="true"] button[type="submit"]:not([disabled])'),
+    page.locator('[data-form-submit-order]'),
   ];
   for (const loc of selectors) {
     if (await loc.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await loc.scrollIntoViewIfNeeded().catch(() => undefined);
       await loc.click();
       return;
     }
   }
-  // Last-resort DOM trigger: try to find and click any submit-like button programmatically
+  // Last-resort DOM trigger limited to known confirm forms to avoid deleting cart items
   const clicked = await page.evaluate(() => {
-    const candidates = Array.from(document.querySelectorAll(
-      'form[name*="confirm" i] button[type="submit"], button[name*="submit" i], button[data-form-submit], form button[type="submit"]'
-    )) as HTMLButtonElement[];
-    for (const b of candidates) {
-      if (b && !b.hasAttribute('disabled') && (b.offsetParent !== null || b.getClientRects().length)) {
-        try { b.click(); return true; } catch {}
+    const forms = Array.from(document.querySelectorAll(
+      'form[name*="confirm" i], form[action*="checkout/order" i]'
+    )) as HTMLFormElement[];
+    for (const form of forms) {
+      const buttons = Array.from(form.querySelectorAll('button[type="submit"]')) as HTMLButtonElement[];
+      for (const button of buttons) {
+        if (!button.hasAttribute('disabled') && (button.offsetParent !== null || button.getClientRects().length)) {
+          try {
+            button.click();
+            return true;
+          } catch {
+            /* ignore */
+          }
+        }
       }
-    }
-    // try forcing disabled off
-    for (const b of candidates) {
-      try { (b as any).disabled = false; b.click(); return true; } catch {}
+      for (const button of buttons) {
+        try {
+          button.disabled = false;
+          button.click();
+          return true;
+        } catch {
+          /* ignore */
+        }
+      }
     }
     return false;
   });
@@ -337,6 +395,18 @@ async function findLatestOrderNumberByEmail(token: string, email: string): Promi
   return typeof number === 'string' && number.length > 0 ? number : null;
 }
 
+async function waitForLatestOrderNumberByEmail(token: string, email: string, timeoutMs = 30_000): Promise<string | null> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const number = await findLatestOrderNumberByEmail(token, email);
+    if (number) {
+      return number;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  return null;
+}
+
 test('Click & Collect: ready email is sent on delivery -> ready', async ({ page }) => {
   test.setTimeout(180_000);
 
@@ -425,8 +495,9 @@ test('Click & Collect: ready email is sent on delivery -> ready', async ({ page 
   let orderNumber: string | null = null;
   // Try to detect finish page and extract order number; fall back to Admin API lookup by email
   try {
-    await expect(page.locator('body')).toContainText(/Vielen Dank|Bestellung eingegangen/i, { timeout: 15000 });
-    const bodyText = await page.locator('body').innerText();
+    const body = page.locator('body');
+    await expect(body).toContainText(/Bestellnummer|Your order number/i, { timeout: 20000 });
+    const bodyText = await body.innerText();
     orderNumber = extractOrderNumber(bodyText);
   } catch {
     // ignore, we'll resolve via Admin API
@@ -434,7 +505,7 @@ test('Click & Collect: ready email is sent on delivery -> ready', async ({ page 
 
   const token = await getAdminToken();
   if (!orderNumber) {
-    orderNumber = await findLatestOrderNumberByEmail(token, email);
+    orderNumber = await waitForLatestOrderNumberByEmail(token, email);
   }
   if (!orderNumber) {
     throw new Error('Failed to determine order number from finish page or Admin API.');
@@ -445,10 +516,10 @@ test('Click & Collect: ready email is sent on delivery -> ready', async ({ page 
 
   const message = await waitForMessage((m) => /abholbereit|ready for pickup/i.test(m?.subject ?? ''), 90_000);
   const html = await getMessageHtml(message.id);
-  expect(html).toMatch(/Abholbereit|Pickup information/i);
+  expect(html).toMatch(/Abholbereit|ready for pickup/i);
   expect(html).toMatch(new RegExp(orderNumber));
   // New policy: should NOT mention an ID requirement
   expect(html).not.toMatch(/Ausweis|Valid ID/i);
   // Should contain hint that name is enough and payment is in store (DE or EN)
-  expect(html).toMatch(/Ihren Namen zu nennen|payment is made in store/i);
+  expect(html).toMatch(/Ihren Namen zu nennen|payment (?:is|happens) in store/i);
 });

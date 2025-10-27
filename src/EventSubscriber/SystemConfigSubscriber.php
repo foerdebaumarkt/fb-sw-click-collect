@@ -27,19 +27,19 @@ class SystemConfigSubscriber implements EventSubscriberInterface
 
     public function onSystemConfigChanged(SystemConfigChangedEvent $event): void
     {
-        $changed = $event->getChangedKeys();
-        $needsAlign = false;
-        foreach ($changed as $key) {
-            if ($key === 'FoerdeClickCollect.config.reminderRunTime' || $key === 'core.basicInformation.timezone') {
-                $needsAlign = true;
-                break;
-            }
-        }
-        if (!$needsAlign) {
-            return;
+        $keys = [];
+        if (method_exists($event, 'getChangedKeys')) {
+            $keys = $event->getChangedKeys();
+        } elseif (method_exists($event, 'getKey')) {
+            $keys = [$event->getKey()];
         }
 
-        $this->alignNextExecution();
+        foreach ($keys as $key) {
+            if ($key === 'FoerdeClickCollect.config.reminderRunTime' || $key === 'core.basicInformation.timezone') {
+                $this->alignNextExecution();
+                return;
+            }
+        }
     }
 
     private function alignNextExecution(): void
