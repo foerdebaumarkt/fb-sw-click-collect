@@ -1,0 +1,9 @@
+{
+    "foerdeClickCollect": {
+        "pickup": {
+            "title": "Ready for pickup",
+            "openingHours": "Opening hours:",
+            "window": "Please collect your order within <strong>%days%</strong> days."
+        }
+    }
+}

@@ -1,0 +1,10 @@
+{% sw_extends '@Storefront/storefront/email/order/index.html.twig' %}
+
+{% block email_order_content_inner %}
+    {{ parent() }}
+
+    {% if data.clickCollectPickup is defined and (data.clickCollectPickup.storeName or data.clickCollectPickup.storeAddress or data.clickCollectPickup.openingHours) %}
+        <hr>
+        {% sw_include '@FoerdeClickCollect/storefront/component/click_collect/pickup_info.html.twig' with { clickCollectPickup: data.clickCollectPickup } %}
+    {% endif %}
+{% endblock %}

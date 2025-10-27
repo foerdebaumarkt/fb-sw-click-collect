@@ -4,6 +4,7 @@ namespace FoerdeClickCollect\Service;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Content\Mail\Service\MailService;
+use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -14,6 +15,7 @@ class ReminderService
         private readonly Connection $connection,
         private readonly MailService $mailService,
         private readonly SystemConfigService $systemConfig,
+        private readonly PickupConfigResolver $pickupConfigResolver,
     ) {
     }
 
@@ -50,6 +52,7 @@ SELECT
     o.language_id,
     o.created_at      AS order_created,
     o.custom_fields   AS custom_fields,
+    od.custom_fields  AS delivery_custom_fields,
     oc.email,
     CONCAT_WS(" ", oc.first_name, oc.last_name) AS customer_name,
     sm.technical_name AS shipping_tech
@@ -88,10 +91,14 @@ SQL,
             $salesChannelIdHex = is_string($salesChannelId) ? Uuid::fromBytesToHex($salesChannelId) : null;
             $languageIdHex = is_string($languageId) ? Uuid::fromBytesToHex($languageId) : null;
 
-            $pickupWindowDays = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupWindowDays', $salesChannelIdHex) ?? 2);
-            $storeName = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeName', $salesChannelIdHex) ?? 'Ihr Markt');
-            $storeAddress = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelIdHex) ?? '');
-            $openingHoursCfg = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelIdHex) ?? '');
+            $deliveryCustomFields = $this->decodeCustomFields($row['delivery_custom_fields'] ?? null);
+            $snapshot = $this->pickupConfigResolver->extractSnapshotFromCustomFields($deliveryCustomFields)
+                ?? $this->pickupConfigResolver->resolve($salesChannelIdHex ?? $salesChannelId, $languageId);
+
+            $pickupWindowDays = $snapshot['pickupWindowDays'];
+            $storeName = $snapshot['storeName'] !== '' ? $snapshot['storeName'] : 'Ihr Markt';
+            $storeAddress = $snapshot['storeAddress'];
+            $openingHoursCfg = $snapshot['openingHours'];
 
             $expiry = $orderCreated->modify('+' . $pickupWindowDays . ' days');
             if ($expiry < $now) {
@@ -134,8 +141,8 @@ SQL,
                 'recipients' => [ $email => $customerName ],
                 ...(isset($salesChannelIdHex) ? ['salesChannelId' => $salesChannelIdHex] : []),
                 ...(isset($languageIdHex) ? ['languageId' => $languageIdHex] : []),
-                'senderName' => (string) ($this->systemConfig->get('core.mailerSettings.senderName', $salesChannelIdHex) ?? $storeName),
-                'senderEmail' => (string) ($this->systemConfig->get('core.mailerSettings.senderAddress', $salesChannelIdHex) ?? 'no-reply@example.com'),
+                'senderName' => $this->resolveSenderName($salesChannelIdHex, $snapshot['storeName']),
+                'senderEmail' => $this->resolveSenderEmail($salesChannelIdHex),
                 'contentHtml' => $contentHtml,
                 'contentPlain' => $contentPlain,
                 'subject' => $subject,
@@ -143,7 +150,7 @@ SQL,
             $templateData = [
                 'orderNumber' => $orderNumber,
                 'config' => [
-                    'storeName' => $storeName,
+                    'storeName' => $snapshot['storeName'],
                     'storeAddress' => $storeAddress,
                     'openingHours' => $openingHoursCfg,
                     'pickupWindowDays' => $pickupWindowDays,
@@ -151,7 +158,7 @@ SQL,
             ];
 
             try {
-                $this->mailService->send($data, \Shopware\Core\Framework\Context::createDefaultContext(), $templateData);
+                $this->mailService->send($data, Context::createDefaultContext(), $templateData);
                 // Mark order as reminded to avoid duplicates
                 $orderId = $row['order_id'];
                 $orderVersionId = $row['order_version_id'];
@@ -176,5 +183,41 @@ SQL,
         }
 
         return $sent;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function decodeCustomFields(null|string $json): array
+    {
+        if (!is_string($json) || $json === '') {
+            return [];
+        }
+
+        try {
+            $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return [];
+        }
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function resolveSenderName(?string $salesChannelId, string $storeName): string
+    {
+        $configured = trim((string) ($this->systemConfig->get('core.mailerSettings.senderName', $salesChannelId) ?? ''));
+
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        return $storeName !== '' ? $storeName : 'Click & Collect';
+    }
+
+    private function resolveSenderEmail(?string $salesChannelId): string
+    {
+        $configured = trim((string) ($this->systemConfig->get('core.mailerSettings.senderAddress', $salesChannelId) ?? ''));
+
+        return $configured !== '' ? $configured : 'no-reply@example.com';
     }
 }

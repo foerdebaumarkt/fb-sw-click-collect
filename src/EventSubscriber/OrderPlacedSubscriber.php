@@ -2,8 +2,11 @@
 
 namespace FoerdeClickCollect\EventSubscriber;
 
+use FoerdeClickCollect\Service\PickupConfigResolver;
 use Shopware\Core\Checkout\Cart\Event\CheckoutOrderPlacedEvent;
+use Shopware\Core\Checkout\Order\OrderDeliveryEntity;
 use Shopware\Core\Checkout\Order\OrderEntity;
+use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -21,9 +24,11 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
 
     public function __construct(
         private readonly EntityRepository $orderRepository,
+        private readonly EntityRepository $orderDeliveryRepository,
+        private readonly EntityRepository $mailTemplateTypeRepository,
         private readonly SystemConfigService $systemConfig,
         private readonly MailService $mailService,
-        private readonly EntityRepository $mailTemplateTypeRepository
+        private readonly PickupConfigResolver $pickupConfigResolver,
     ) {
     }
 
@@ -42,9 +47,6 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Debug trace to verify subscriber execution
-        error_log('[FoerdeClickCollect] onOrderPlaced triggered for order ' . ($order->getOrderNumber() ?? $order->getId()));
-
         $delivery = $order->getDeliveries()?->first();
         $shipping = $delivery?->getShippingMethod();
         if (!$shipping || $shipping->getTechnicalName() !== 'click_collect') {
@@ -57,11 +59,15 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
             return; // no recipient configured
         }
 
-        $pickupDays = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupWindowDays', $salesChannelId) ?? 2);
-        $prepHours = (int) ($this->systemConfig->get('FoerdeClickCollect.config.pickupPreparationHours', $salesChannelId) ?? 4);
-        $storeName = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeName', $salesChannelId) ?? '');
-        $storeAddress = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelId) ?? '');
-        $openingHours = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelId) ?? '');
+        $snapshot = $this->pickupConfigResolver->resolve($salesChannelId, $order->getLanguageId());
+        $snapshotForStorage = [
+            'storeName' => $snapshot['storeName'],
+            'storeAddress' => $snapshot['storeAddress'],
+            'openingHours' => $snapshot['openingHours'],
+            'pickupWindowDays' => $snapshot['pickupWindowDays'],
+            'pickupPreparationHours' => $snapshot['pickupPreparationHours'],
+        ];
+        $this->persistSnapshot($order, $snapshotForStorage, $context);
 
         $templateId = $this->resolveStaffTemplateId($context);
         if (!$templateId) {
@@ -69,20 +75,24 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $storeName = $snapshotForStorage['storeName'] !== '' ? $snapshotForStorage['storeName'] : 'Store';
         $templateData = [
             'orderNumber' => $order->getOrderNumber(),
             'order' => $order,
             'config' => [
-                'pickupWindowDays' => $pickupDays,
-                'pickupPreparationHours' => $prepHours,
-                'storeName' => $storeName,
-                'storeAddress' => $storeAddress,
-                'openingHours' => $openingHours,
+                'pickupWindowDays' => $snapshotForStorage['pickupWindowDays'],
+                'pickupPreparationHours' => $snapshotForStorage['pickupPreparationHours'],
+                'storeName' => $snapshotForStorage['storeName'],
+                'storeAddress' => $snapshotForStorage['storeAddress'],
+                'openingHours' => $snapshotForStorage['openingHours'],
             ],
         ];
 
-        $senderName = (string) ($this->systemConfig->get('core.mailerSettings.senderName', $salesChannelId) ?? 'Click & Collect');
-        $senderEmail = (string) ($this->systemConfig->get('core.mailerSettings.senderAddress', $salesChannelId) ?? '');
+        $senderName = trim((string) ($this->systemConfig->get('core.mailerSettings.senderName', $salesChannelId) ?? ''));
+        if ($senderName === '') {
+            $senderName = 'Click & Collect';
+        }
+        $senderEmail = trim((string) ($this->systemConfig->get('core.mailerSettings.senderAddress', $salesChannelId) ?? ''));
 
         $data = [
             'templateId' => $templateId,
@@ -99,6 +109,42 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
         } catch (\Throwable $e) {
             error_log('[FoerdeClickCollect] staff mail send failed: ' . $e->getMessage());
         }
+    }
+
+    private function persistSnapshot(OrderEntity $order, array $snapshot, Context $context): void
+    {
+        $deliveries = $order->getDeliveries();
+        if (!$deliveries) {
+            return;
+        }
+
+        $updates = [];
+        /** @var OrderDeliveryEntity $delivery */
+        foreach ($deliveries as $delivery) {
+            $shipping = $delivery->getShippingMethod();
+            if (!$shipping || $shipping->getTechnicalName() !== 'click_collect') {
+                continue;
+            }
+
+            $existing = $delivery->getCustomFields() ?? [];
+            if (!$this->pickupConfigResolver->snapshotDiffers($existing, $snapshot)) {
+                continue;
+            }
+
+            $updatedFields = $this->pickupConfigResolver->applySnapshotToCustomFields($existing, $snapshot);
+
+            $updates[] = [
+                'id' => $delivery->getId(),
+                'versionId' => $delivery->getVersionId() ?? Defaults::LIVE_VERSION,
+                'customFields' => $updatedFields,
+            ];
+        }
+
+        if (!$updates) {
+            return;
+        }
+
+        $this->orderDeliveryRepository->update($updates, $context);
     }
 
     private function loadOrder(string $orderId, Context $context): ?OrderEntity

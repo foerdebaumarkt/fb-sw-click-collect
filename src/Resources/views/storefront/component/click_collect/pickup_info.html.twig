@@ -1,0 +1,23 @@
+{% set hasAddress = clickCollectPickup.storeName or clickCollectPickup.storeAddress or clickCollectPickup.openingHours %}
+{% if hasAddress %}
+    <div class="cc-pickup-info">
+        <h3 class="cc-pickup-info__title">{{ "foerdeClickCollect.pickup.title"|trans }}</h3>
+        {% if clickCollectPickup.storeName %}
+            <p class="cc-pickup-info__store"><strong>{{ clickCollectPickup.storeName }}</strong></p>
+        {% endif %}
+        {% if clickCollectPickup.storeAddress %}
+            <p class="cc-pickup-info__address">{{ clickCollectPickup.storeAddress|nl2br }}</p>
+        {% endif %}
+        {% if clickCollectPickup.openingHours %}
+            <p class="cc-pickup-info__hours">
+                <em>{{ "foerdeClickCollect.pickup.openingHours"|trans }}</em><br>
+                {{ clickCollectPickup.openingHours|nl2br }}
+            </p>
+        {% endif %}
+        {% if clickCollectPickup.pickupWindowDays > 0 %}
+            <p class="cc-pickup-info__window">
+                {{ "foerdeClickCollect.pickup.window"|trans({ '%days%': clickCollectPickup.pickupWindowDays })|raw }}
+            </p>
+        {% endif %}
+    </div>
+{% endif %}
