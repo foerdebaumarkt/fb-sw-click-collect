@@ -1,0 +1,9 @@
+{
+    "foerdeClickCollect": {
+        "pickup": {
+            "title": "Abholung im Markt",
+            "openingHours": "Öffnungszeiten:",
+            "window": "Bitte holen Sie die Ware innerhalb von <strong>%days%</strong> Tagen ab."
+        }
+    }
+}

@@ -60,77 +60,81 @@ class Migration1761264003OrderConfirmationMailTemplate extends MigrationStep
             $templateId = Uuid::fromHexToBytes($templateId);
         }
 
-        $this->upsertTemplateTranslation($connection, $templateId, 'de-DE',
-            'Ihre Click & Collect Bestellung #{{ order.orderNumber }} ist eingegangen',
-            <<<HTML
-<p>Hallo {{ order.orderCustomer.firstName }} {{ order.orderCustomer.lastName }},</p>
+    $this->upsertTemplateTranslation($connection, $templateId, 'de-DE',
+        'Ihre Click & Collect Bestellung #{{ order.orderNumber }} ist eingegangen',
+        <<<HTML
+{% set pickup = clickCollectPickup|default({}) %}
+<p>Hallo {{ order.orderCustomer.firstName|default('') }} {{ order.orderCustomer.lastName|default('') }},</p>
 <p>vielen Dank für Ihre Click &amp; Collect Bestellung <strong>#{{ order.orderNumber }}</strong>.</p>
 <p>Wir bereiten Ihre Artikel vor. Sobald sie abholbereit sind, erhalten Sie eine weitere E-Mail.</p>
-<p><strong>Abholung (nach Benachrichtigung)</strong><br/>{{ config.storeName|default('Ihr Markt') }}<br/>{{ config.storeAddress|nl2br }}</p>
-{% if config.openingHours is defined and config.openingHours %}<p><em>Öffnungszeiten:</em><br/>{{ config.openingHours|nl2br }}</p>{% endif %}
-<p>Abholfenster: {{ config.pickupWindowDays|default(2) }} Tage • Vorbereitung: ca. {{ config.pickupPreparationHours|default(4) }} Stunden.</p>
+<p><strong>Abholung (nach Benachrichtigung)</strong><br/>{{ pickup.storeName|default('Ihr Markt') }}<br/>{{ pickup.storeAddress|default('')|nl2br }}</p>
+{% if pickup.openingHours|default('') %}<p><em>Öffnungszeiten:</em><br/>{{ pickup.openingHours|nl2br }}</p>{% endif %}
+<p>Abholfenster: {{ pickup.pickupWindowDays|default(2) }} Tage - Vorbereitung: ca. {{ pickup.pickupPreparationHours|default(4) }} Stunden.</p>
 <p>Eine Übersicht Ihrer Bestellung finden Sie jederzeit im Kundenkonto.</p>
 <p>Ihr Förde Baumarkt Team</p>
 HTML,
-            <<<PLAIN
-Hallo {{ order.orderCustomer.firstName }} {{ order.orderCustomer.lastName }},
+        <<<PLAIN
+{% set pickup = clickCollectPickup|default({}) %}
+Hallo {{ order.orderCustomer.firstName|default('') }} {{ order.orderCustomer.lastName|default('') }},
 
 vielen Dank für Ihre Click & Collect Bestellung #{{ order.orderNumber }}.
 
 Wir bereiten Ihre Artikel vor und informieren Sie per E-Mail, sobald die Abholung möglich ist.
 
 Abholung (nach Benachrichtigung):
-{{ config.storeName|default('Ihr Markt') }}
-{{ config.storeAddress }}
-{% if config.openingHours is defined and config.openingHours %}
+{{ pickup.storeName|default('Ihr Markt') }}
+{{ pickup.storeAddress|default('') }}
+{% if pickup.openingHours|default('') %}
 Öffnungszeiten:
-{{ config.openingHours }}
+{{ pickup.openingHours }}
 {% endif %}
 
-Abholfenster: {{ config.pickupWindowDays|default(2) }} Tage
-Vorbereitung: ca. {{ config.pickupPreparationHours|default(4) }} Stunden
+Abholfenster: {{ pickup.pickupWindowDays|default(2) }} Tage
+Vorbereitung: ca. {{ pickup.pickupPreparationHours|default(4) }} Stunden
 
 Sie finden Ihre Bestellung jederzeit im Kundenkonto.
 
 Ihr Förde Baumarkt Team
 PLAIN
-        );
+    );
 
-        $this->upsertTemplateTranslation($connection, $templateId, 'en-GB',
-            'Your Click & Collect order #{{ order.orderNumber }} has been received',
-            <<<HTML
-<p>Hello {{ order.orderCustomer.firstName }} {{ order.orderCustomer.lastName }},</p>
+    $this->upsertTemplateTranslation($connection, $templateId, 'en-GB',
+        'Your Click & Collect order #{{ order.orderNumber }} has been received',
+        <<<HTML
+{% set pickup = clickCollectPickup|default({}) %}
+<p>Hello {{ order.orderCustomer.firstName|default('') }} {{ order.orderCustomer.lastName|default('') }},</p>
 <p>thank you for your Click &amp; Collect order <strong>#{{ order.orderNumber }}</strong>.</p>
 <p>We are preparing your items. You will receive another email once they are ready for pickup.</p>
-<p><strong>Pickup (after notification)</strong><br/>{{ config.storeName|default('Your store') }}<br/>{{ config.storeAddress|nl2br }}</p>
-{% if config.openingHours is defined and config.openingHours %}<p><em>Opening hours:</em><br/>{{ config.openingHours|nl2br }}</p>{% endif %}
-<p>Pickup window: {{ config.pickupWindowDays|default(2) }} days • Preparation time: approx. {{ config.pickupPreparationHours|default(4) }} hours.</p>
+<p><strong>Pickup (after notification)</strong><br/>{{ pickup.storeName|default('Your store') }}<br/>{{ pickup.storeAddress|default('')|nl2br }}</p>
+{% if pickup.openingHours|default('') %}<p><em>Opening hours:</em><br/>{{ pickup.openingHours|nl2br }}</p>{% endif %}
+<p>Pickup window: {{ pickup.pickupWindowDays|default(2) }} days - Preparation time: approx. {{ pickup.pickupPreparationHours|default(4) }} hours.</p>
 <p>You can review your order details in your customer account at any time.</p>
 <p>Your Förde Baumarkt Team</p>
 HTML,
-            <<<PLAIN
-Hello {{ order.orderCustomer.firstName }} {{ order.orderCustomer.lastName }},
+        <<<PLAIN
+{% set pickup = clickCollectPickup|default({}) %}
+Hello {{ order.orderCustomer.firstName|default('') }} {{ order.orderCustomer.lastName|default('') }},
 
 thank you for your Click & Collect order #{{ order.orderNumber }}.
 
 We are preparing your items and will notify you once pickup is possible.
 
 Pickup (after notification):
-{{ config.storeName|default('Your store') }}
-{{ config.storeAddress }}
-{% if config.openingHours is defined and config.openingHours %}
+{{ pickup.storeName|default('Your store') }}
+{{ pickup.storeAddress|default('') }}
+{% if pickup.openingHours|default('') %}
 Opening hours:
-{{ config.openingHours }}
+{{ pickup.openingHours }}
 {% endif %}
 
-Pickup window: {{ config.pickupWindowDays|default(2) }} days
-Preparation time: approx. {{ config.pickupPreparationHours|default(4) }} hours
+Pickup window: {{ pickup.pickupWindowDays|default(2) }} days
+Preparation time: approx. {{ pickup.pickupPreparationHours|default(4) }} hours
 
 You can view your order anytime in your customer account.
 
 Your Förde Baumarkt Team
 PLAIN
-        );
+    );
     }
 
     public function updateDestructive(Connection $connection): void

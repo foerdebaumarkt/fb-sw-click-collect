@@ -16,7 +16,7 @@ done
 [[ -d "${SHOPWARE_LOCAL_DIR}" ]] || error "shopware-local not found at ${SHOPWARE_LOCAL_DIR}"
 
 run_compose() { (cd "${SHOPWARE_LOCAL_DIR}" && docker compose "$@"); }
-run_compose_exec() { (cd "${SHOPWARE_LOCAL_DIR}" && docker compose exec -T "$@"); }
+run_compose_exec() { (cd "${SHOPWARE_LOCAL_DIR}" && docker compose exec -e COMPOSER_DISABLE_RUNTIME_PLATFORM_CHECK=1 -T "$@"); }
 
 # Ensure shop is up
 if [[ -x "${SHOPWARE_LOCAL_DIR}/scripts/e2e/shop-up.sh" ]]; then
@@ -39,7 +39,7 @@ fi
     -cf - .
 ) | (
   cd "${SHOPWARE_LOCAL_DIR}" && \
-  docker compose exec -T shop bash -lc "set -euo pipefail; mkdir -p ${PLUGIN_DEST_CONTAINER}; find ${PLUGIN_DEST_CONTAINER} -mindepth 1 -maxdepth 1 -exec rm -rf {} +; tar -C ${PLUGIN_DEST_CONTAINER} -xf -; find ${PLUGIN_DEST_CONTAINER} -name '._*' -delete"
+  docker compose exec -e COMPOSER_DISABLE_RUNTIME_PLATFORM_CHECK=1 -T shop bash -lc "set -euo pipefail; mkdir -p ${PLUGIN_DEST_CONTAINER}; find ${PLUGIN_DEST_CONTAINER} -mindepth 1 -maxdepth 1 -exec rm -rf {} +; tar -C ${PLUGIN_DEST_CONTAINER} -xf -; find ${PLUGIN_DEST_CONTAINER} -name '._*' -delete"
 )
 echo "[install-plugin] Synchronized plugin sources to container path ${PLUGIN_DEST_CONTAINER}" >&2
 
@@ -50,6 +50,7 @@ run_compose_exec shop bash -lc 'set -e; bin/console plugin:refresh; if ! bin/con
 if (cd "${SHOPWARE_LOCAL_DIR}" && make -n admin-build-extensions >/dev/null 2>&1); then
   (cd "${SHOPWARE_LOCAL_DIR}" && make admin-build-extensions || true)
 fi
+
 if (cd "${SHOPWARE_LOCAL_DIR}" && make -n admin-assets-compat >/dev/null 2>&1); then
   (cd "${SHOPWARE_LOCAL_DIR}" && make admin-assets-compat || true)
 fi

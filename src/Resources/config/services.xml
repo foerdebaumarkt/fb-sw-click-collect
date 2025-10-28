@@ -5,6 +5,8 @@
     <services>
         <defaults autowire="true" autoconfigure="true" public="false"/>
 
+        <!-- Shared pickup configuration helpers -->
+        <service id="FoerdeClickCollect\Service\PickupConfigResolver" />
         <!-- Core reminder service -->
         <service id="FoerdeClickCollect\Service\ReminderService" />
         <!-- Payment handler for Click & Collect (offline, synchronous) -->
@@ -15,8 +17,13 @@
         <service id="FoerdeClickCollect\EventSubscriber\OrderPlacedSubscriber">
             <tag name="kernel.event_subscriber"/>
             <argument type="service" id="order.repository"/>
+            <argument type="service" id="order_delivery.repository"/>
+            <argument type="service" id="mail_template_type.repository"/>
         </service>
         <service id="FoerdeClickCollect\EventSubscriber\OrderDeliveryReadySubscriber">
+            <tag name="kernel.event_subscriber"/>
+        </service>
+        <service id="FoerdeClickCollect\EventSubscriber\OrderConfirmationMailSubscriber">
             <tag name="kernel.event_subscriber"/>
         </service>
         <!-- Console command to send pickup reminders -->
@@ -26,14 +33,14 @@
 
         <!-- Scheduled task handler to send reminders daily -->
         <service id="FoerdeClickCollect\ScheduledTask\SendRemindersTaskHandler">
-            <argument type="service" id="shopware.repository.scheduled_task"/>
+            <argument type="service" id="scheduled_task.repository"/>
             <tag name="shopware.scheduled.task.handler"/>
         </service>
 
         <!-- Align schedule when config/timezone changes -->
         <service id="FoerdeClickCollect\EventSubscriber\SystemConfigSubscriber">
             <tag name="kernel.event_subscriber"/>
-            <argument type="service" id="shopware.repository.scheduled_task"/>
+            <argument type="service" id="scheduled_task.repository"/>
         </service>
 
         <!-- Test-only controller to trigger reminders via Admin API in dev/test -->
