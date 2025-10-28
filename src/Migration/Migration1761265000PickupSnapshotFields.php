@@ -8,6 +8,12 @@ use Shopware\Core\Framework\Uuid\Uuid;
 
 class Migration1761265000PickupSnapshotFields extends MigrationStep
 {
+    private ?string $setRelationColumn = null;
+
+    private ?string $customFieldSetColumn = null;
+
+    private ?bool $hasCustomFieldSetTranslation = null;
+
     public function getCreationTimestamp(): int
     {
         // 2025-10-26 12:00:00 UTC
@@ -96,7 +102,9 @@ class Migration1761265000PickupSnapshotFields extends MigrationStep
 
     private function ensureSetRelation(Connection $connection, string $setId, string $entity): void
     {
-        $exists = $connection->fetchOne('SELECT 1 FROM custom_field_set_relation WHERE custom_field_set_id = :id AND entity_name = :entity', [
+        $column = $this->getSetRelationColumn($connection);
+
+        $exists = $connection->fetchOne(sprintf('SELECT 1 FROM custom_field_set_relation WHERE %s = :id AND entity_name = :entity', $column), [
             'id' => $setId,
             'entity' => $entity,
         ]);
@@ -106,7 +114,8 @@ class Migration1761265000PickupSnapshotFields extends MigrationStep
         }
 
         $connection->insert('custom_field_set_relation', [
-            'custom_field_set_id' => $setId,
+            'id' => Uuid::randomBytes(),
+            $column => $setId,
             'entity_name' => $entity,
             'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
         ]);
@@ -123,19 +132,24 @@ class Migration1761265000PickupSnapshotFields extends MigrationStep
             return;
         }
 
+        $setColumn = $this->getCustomFieldSetColumn($connection);
         $connection->insert('custom_field', [
             'id' => Uuid::randomBytes(),
             'name' => $name,
             'type' => $type,
             'config' => json_encode($config, JSON_THROW_ON_ERROR),
             'active' => 1,
-            'custom_field_set_id' => $setId,
+            $setColumn => $setId,
             'created_at' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
         ]);
     }
 
     private function insertSetTranslation(Connection $connection, string $setId, string $localeCode, string $label): void
     {
+        if (!$this->customFieldSetTranslationExists($connection)) {
+            return;
+        }
+
         $languageId = $this->getLanguageIdByLocale($connection, $localeCode);
         if (!$languageId) {
             return;
@@ -180,5 +194,79 @@ class Migration1761265000PickupSnapshotFields extends MigrationStep
         }
 
         return is_string($id) ? $id : null;
+    }
+
+    private function getSetRelationColumn(Connection $connection): string
+    {
+        if ($this->setRelationColumn !== null) {
+            return $this->setRelationColumn;
+        }
+
+        $this->setRelationColumn = $this->columnExistsInSchema($connection, 'custom_field_set_relation', 'custom_field_set_id')
+            ? 'custom_field_set_id'
+            : 'set_id';
+
+        return $this->setRelationColumn;
+    }
+
+    private function getCustomFieldSetColumn(Connection $connection): string
+    {
+        if ($this->customFieldSetColumn !== null) {
+            return $this->customFieldSetColumn;
+        }
+
+        $this->customFieldSetColumn = $this->columnExistsInSchema($connection, 'custom_field', 'custom_field_set_id')
+            ? 'custom_field_set_id'
+            : 'set_id';
+
+        return $this->customFieldSetColumn;
+    }
+
+    private function customFieldSetTranslationExists(Connection $connection): bool
+    {
+        if ($this->hasCustomFieldSetTranslation !== null) {
+            return $this->hasCustomFieldSetTranslation;
+        }
+
+    $this->hasCustomFieldSetTranslation = $this->tableExistsInSchema($connection, 'custom_field_set_translation');
+
+        return $this->hasCustomFieldSetTranslation;
+    }
+
+    private function columnExistsInSchema(Connection $connection, string $table, string $column): bool
+    {
+        $schema = $connection->fetchOne('SELECT DATABASE()');
+        if (!is_string($schema) || $schema === '') {
+            return false;
+        }
+
+        $result = $connection->fetchOne(
+            'SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table AND COLUMN_NAME = :column LIMIT 1',
+            [
+                'schema' => $schema,
+                'table' => $table,
+                'column' => $column,
+            ]
+        );
+
+        return (bool) $result;
+    }
+
+    private function tableExistsInSchema(Connection $connection, string $table): bool
+    {
+        $schema = $connection->fetchOne('SELECT DATABASE()');
+        if (!is_string($schema) || $schema === '') {
+            return false;
+        }
+
+        $result = $connection->fetchOne(
+            'SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = :schema AND TABLE_NAME = :table LIMIT 1',
+            [
+                'schema' => $schema,
+                'table' => $table,
+            ]
+        );
+
+        return (bool) $result;
     }
 }
