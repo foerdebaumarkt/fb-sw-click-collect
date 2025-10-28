@@ -4,6 +4,7 @@ const SHOPWARE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080';
 const MAILCATCHER_URL = process.env.MAILCATCHER_URL ?? 'http://localhost:1080';
 const ADMIN_USERNAME = process.env.SHOPWARE_ADMIN_USERNAME ?? 'admin';
 const ADMIN_PASSWORD = process.env.SHOPWARE_ADMIN_PASSWORD ?? 'shopware';
+const REQUIRED_SHOPWARE_VERSION = (process.env.SHOPWARE_E2E_VERSION ?? '').trim();
 
 function resolveUrl(path: string): string {
   return new URL(path, SHOPWARE_URL.endsWith('/') ? SHOPWARE_URL : `${SHOPWARE_URL}/`).toString();
@@ -293,10 +294,28 @@ async function transitionDeliveryToReady(token: string, deliveryId: string): Pro
   throw new Error(`Failed to transition delivery to ready (last status ${lastStatus})`);
 }
 
-// Skip by default unless REMINDER_E2E=1
-const shouldRun = process.env.REMINDER_E2E === '1';
-(shouldRun ? test : test.skip)('Click & Collect: reminder email is sent via dev action (best-effort)', async () => {
+async function getShopwareVersion(): Promise<string | null> {
+  try {
+    const res = await fetch(resolveUrl('api/_info/version'), { headers: { Accept: 'application/json' } });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { version?: string };
+    return typeof data.version === 'string' ? data.version : null;
+  } catch {
+    return null;
+  }
+}
+
+const reminderTest = process.env.REMINDER_E2E === '1' ? test : test.skip;
+
+reminderTest('Click & Collect: reminder email is sent via dev action (best-effort)', async () => {
   test.setTimeout(120_000);
+
+  if (REQUIRED_SHOPWARE_VERSION) {
+    const version = await getShopwareVersion();
+    if (version !== REQUIRED_SHOPWARE_VERSION) {
+      test.skip(true, `Shopware version ${version ?? 'unknown'} does not match required ${REQUIRED_SHOPWARE_VERSION}`);
+    }
+  }
 
   await clearMailbox();
   const token = await getAdminToken();
