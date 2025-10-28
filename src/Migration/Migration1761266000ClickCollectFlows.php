@@ -122,7 +122,13 @@ class Migration1761266000ClickCollectFlows extends MigrationStep
                 'custom',
                 [[
                     'type' => 'email',
-                    'value' => '{{ config("FoerdeClickCollect.config.storeEmail", salesChannel.id) ?: config("core.basicInformation.email", salesChannel.id) ?: config("core.mailerSettings.senderAddress", salesChannel.id) }}',
+                    'value' => '{{ (order.deliveries|first ? ((order.deliveries|first).customFields.foerde_click_collect_store_email|default(null)) : null)
+                        ?: config("FoerdeClickCollect.config.storeEmail", salesChannel.id)
+                        ?: config("FoerdeClickCollect.config.storeEmail")
+                        ?: config("core.basicInformation.email", salesChannel.id)
+                        ?: config("core.basicInformation.email")
+                        ?: config("core.mailerSettings.senderAddress", salesChannel.id)
+                        ?: config("core.mailerSettings.senderAddress") }}',
                     'name' => '{{ (order.deliveries|first ? ((order.deliveries|first).customFields.foerde_click_collect_store_name|default(null)) : null)
                         ?? config("FoerdeClickCollect.config.storeName", salesChannel.id)
                         ?? config("core.basicInformation.company", salesChannel.id)

@@ -15,6 +15,7 @@ class PickupConfigResolver
     public const FIELD_STORE_NAME = 'foerde_click_collect_store_name';
     public const FIELD_STORE_ADDRESS = 'foerde_click_collect_store_address';
     public const FIELD_OPENING_HOURS = 'foerde_click_collect_opening_hours';
+    public const FIELD_STORE_EMAIL = 'foerde_click_collect_store_email';
     public const FIELD_PICKUP_WINDOW_DAYS = 'foerde_click_collect_pickup_window_days';
     public const FIELD_PICKUP_PREPARATION_HOURS = 'foerde_click_collect_pickup_preparation_hours';
 
@@ -30,7 +31,7 @@ class PickupConfigResolver
      * @param string $salesChannelId Sales channel id (hex string or binary).
      * @param string|null $languageId Language id (hex string or binary) for locale-sensitive fallbacks.
      *
-     * @return array{storeName:string,storeAddress:string,openingHours:string,pickupWindowDays:int,pickupPreparationHours:int,localeCode: ?string}
+    * @return array{storeName:string,storeAddress:string,openingHours:string,storeEmail:string,pickupWindowDays:int,pickupPreparationHours:int,localeCode:?string}
      */
     public function resolve(string $salesChannelId, ?string $languageId): array
     {
@@ -69,6 +70,23 @@ class PickupConfigResolver
             $openingHours = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours'));
         }
 
+        $storeEmail = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeEmail', $salesChannelHex));
+        if ($storeEmail === '') {
+            $storeEmail = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeEmail'));
+        }
+        if ($storeEmail === '') {
+            $storeEmail = $this->sanitizeString($this->systemConfig->get('core.basicInformation.email', $salesChannelHex));
+            if ($storeEmail === '') {
+                $storeEmail = $this->sanitizeString($this->systemConfig->get('core.basicInformation.email'));
+            }
+        }
+        if ($storeEmail === '') {
+            $storeEmail = $this->sanitizeString($this->systemConfig->get('core.mailerSettings.senderAddress', $salesChannelHex));
+            if ($storeEmail === '') {
+                $storeEmail = $this->sanitizeString($this->systemConfig->get('core.mailerSettings.senderAddress'));
+            }
+        }
+
         $pickupWindowConfigured = $this->systemConfig->get('FoerdeClickCollect.config.pickupWindowDays', $salesChannelHex);
         if (!is_numeric($pickupWindowConfigured)) {
             $pickupWindowConfigured = $this->systemConfig->get('FoerdeClickCollect.config.pickupWindowDays');
@@ -85,6 +103,7 @@ class PickupConfigResolver
             'storeName' => $storeName,
             'storeAddress' => $storeAddress,
             'openingHours' => $openingHours,
+            'storeEmail' => $storeEmail,
             'pickupWindowDays' => max(0, $pickupWindowDays),
             'pickupPreparationHours' => max(0, $pickupPreparationHours),
             'localeCode' => $localeCode,
@@ -96,7 +115,7 @@ class PickupConfigResolver
      *
      * @param array<string,mixed>|null $customFields
      *
-     * @return array{storeName:string,storeAddress:string,openingHours:string,pickupWindowDays:int,pickupPreparationHours:int}|null
+    * @return array{storeName:string,storeAddress:string,openingHours:string,storeEmail:string,pickupWindowDays:int,pickupPreparationHours:int}|null
      */
     public function extractSnapshotFromCustomFields(?array $customFields): ?array
     {
@@ -107,10 +126,11 @@ class PickupConfigResolver
         $storeName = $this->sanitizeString($customFields[self::FIELD_STORE_NAME] ?? null);
         $storeAddress = $this->sanitizeString($customFields[self::FIELD_STORE_ADDRESS] ?? null);
         $openingHours = $this->sanitizeString($customFields[self::FIELD_OPENING_HOURS] ?? null);
+        $storeEmail = $this->sanitizeString($customFields[self::FIELD_STORE_EMAIL] ?? null);
         $windowDays = $this->sanitizeInt($customFields[self::FIELD_PICKUP_WINDOW_DAYS] ?? null, 2);
         $prepHours = $this->sanitizeInt($customFields[self::FIELD_PICKUP_PREPARATION_HOURS] ?? null, 4);
 
-        $hasContent = $storeName !== '' || $storeAddress !== '' || $openingHours !== '';
+        $hasContent = $storeName !== '' || $storeAddress !== '' || $openingHours !== '' || $storeEmail !== '';
         if (!$hasContent && $windowDays === 0 && $prepHours === 0) {
             return null;
         }
@@ -119,6 +139,7 @@ class PickupConfigResolver
             'storeName' => $storeName,
             'storeAddress' => $storeAddress,
             'openingHours' => $openingHours,
+            'storeEmail' => $storeEmail,
             'pickupWindowDays' => $windowDays,
             'pickupPreparationHours' => $prepHours,
         ];
@@ -128,7 +149,7 @@ class PickupConfigResolver
      * Merge a snapshot into existing custom fields.
      *
      * @param array<string,mixed> $existing
-     * @param array{storeName:string,storeAddress:string,openingHours:string,pickupWindowDays:int,pickupPreparationHours:int} $snapshot
+     * @param array{storeName:string,storeAddress:string,openingHours:string,storeEmail:string,pickupWindowDays:int,pickupPreparationHours:int} $snapshot
      *
      * @return array<string,mixed>
      */
@@ -138,6 +159,7 @@ class PickupConfigResolver
         $fields[self::FIELD_STORE_NAME] = $snapshot['storeName'] !== '' ? $snapshot['storeName'] : null;
         $fields[self::FIELD_STORE_ADDRESS] = $snapshot['storeAddress'] !== '' ? $snapshot['storeAddress'] : null;
         $fields[self::FIELD_OPENING_HOURS] = $snapshot['openingHours'] !== '' ? $snapshot['openingHours'] : null;
+        $fields[self::FIELD_STORE_EMAIL] = $snapshot['storeEmail'] !== '' ? $snapshot['storeEmail'] : null;
         $fields[self::FIELD_PICKUP_WINDOW_DAYS] = $snapshot['pickupWindowDays'];
         $fields[self::FIELD_PICKUP_PREPARATION_HOURS] = $snapshot['pickupPreparationHours'];
 
@@ -153,6 +175,7 @@ class PickupConfigResolver
             'storeName' => '',
             'storeAddress' => '',
             'openingHours' => '',
+            'storeEmail' => '',
             'pickupWindowDays' => 0,
             'pickupPreparationHours' => 0,
         ];
@@ -282,13 +305,14 @@ class PickupConfigResolver
         return json_encode($data, JSON_THROW_ON_ERROR);
     }
 
-    /** @param array{storeName:string,storeAddress:string,openingHours:string,pickupWindowDays:int,pickupPreparationHours:int} $snapshot */
+    /** @param array{storeName:string,storeAddress:string,openingHours:string,storeEmail:string,pickupWindowDays:int,pickupPreparationHours:int} $snapshot */
     private function normaliseSnapshot(array $snapshot): array
     {
         return [
             'storeName' => $snapshot['storeName'],
             'storeAddress' => $snapshot['storeAddress'],
             'openingHours' => $snapshot['openingHours'],
+            'storeEmail' => $snapshot['storeEmail'],
             'pickupWindowDays' => (int) $snapshot['pickupWindowDays'],
             'pickupPreparationHours' => (int) $snapshot['pickupPreparationHours'],
         ];

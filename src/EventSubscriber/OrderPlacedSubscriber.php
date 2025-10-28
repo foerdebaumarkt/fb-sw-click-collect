@@ -48,6 +48,7 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
             'storeName' => $snapshot['storeName'],
             'storeAddress' => $snapshot['storeAddress'],
             'openingHours' => $snapshot['openingHours'],
+            'storeEmail' => $snapshot['storeEmail'],
             'pickupWindowDays' => $snapshot['pickupWindowDays'],
             'pickupPreparationHours' => $snapshot['pickupPreparationHours'],
         ];

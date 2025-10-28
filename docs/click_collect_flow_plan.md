@@ -20,6 +20,7 @@ Provision the Click & Collect order-confirmation flow via code so it survives `m
 ### Staff Recipient Fallbacks
 
 - If the store email is empty, fall back to the Shopware admin email (system config or primary admin user).
+- Snapshot includes the resolved store email on order placement so Flow Builder uses the captured address first.
 - If the store name is empty, fall back to the admin company/name (or the email if no name exists).
 
 ### Additional Flow: Ready-for-pickup Notification
