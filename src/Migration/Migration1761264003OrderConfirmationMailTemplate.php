@@ -63,7 +63,16 @@ class Migration1761264003OrderConfirmationMailTemplate extends MigrationStep
     $this->upsertTemplateTranslation($connection, $templateId, 'de-DE',
         'Ihre Click & Collect Bestellung #{{ order.orderNumber }} ist eingegangen',
         <<<HTML
-{% set pickup = clickCollectPickup|default({}) %}
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = clickCollectPickup|default({}) %}
+{% set pickup = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
 <p>Hallo {{ order.orderCustomer.firstName|default('') }} {{ order.orderCustomer.lastName|default('') }},</p>
 <p>vielen Dank für Ihre Click &amp; Collect Bestellung <strong>#{{ order.orderNumber }}</strong>.</p>
 <p>Wir bereiten Ihre Artikel vor. Sobald sie abholbereit sind, erhalten Sie eine weitere E-Mail.</p>
@@ -74,7 +83,16 @@ class Migration1761264003OrderConfirmationMailTemplate extends MigrationStep
 <p>Ihr Förde Baumarkt Team</p>
 HTML,
         <<<PLAIN
-{% set pickup = clickCollectPickup|default({}) %}
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = clickCollectPickup|default({}) %}
+{% set pickup = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
 Hallo {{ order.orderCustomer.firstName|default('') }} {{ order.orderCustomer.lastName|default('') }},
 
 vielen Dank für Ihre Click & Collect Bestellung #{{ order.orderNumber }}.
@@ -101,7 +119,16 @@ PLAIN
     $this->upsertTemplateTranslation($connection, $templateId, 'en-GB',
         'Your Click & Collect order #{{ order.orderNumber }} has been received',
         <<<HTML
-{% set pickup = clickCollectPickup|default({}) %}
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = clickCollectPickup|default({}) %}
+{% set pickup = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
 <p>Hello {{ order.orderCustomer.firstName|default('') }} {{ order.orderCustomer.lastName|default('') }},</p>
 <p>thank you for your Click &amp; Collect order <strong>#{{ order.orderNumber }}</strong>.</p>
 <p>We are preparing your items. You will receive another email once they are ready for pickup.</p>
@@ -112,7 +139,16 @@ PLAIN
 <p>Your Förde Baumarkt Team</p>
 HTML,
         <<<PLAIN
-{% set pickup = clickCollectPickup|default({}) %}
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = clickCollectPickup|default({}) %}
+{% set pickup = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
 Hello {{ order.orderCustomer.firstName|default('') }} {{ order.orderCustomer.lastName|default('') }},
 
 thank you for your Click & Collect order #{{ order.orderNumber }}.

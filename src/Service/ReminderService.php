@@ -3,18 +3,21 @@
 namespace FoerdeClickCollect\Service;
 
 use Doctrine\DBAL\Connection;
-use Shopware\Core\Content\Mail\Service\MailService;
+use FoerdeClickCollect\Event\PickupReminderEvent;
+use Shopware\Core\Checkout\Order\OrderEntity;
+use Shopware\Core\Content\Flow\Dispatching\FlowDispatcher;
 use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\Uuid\Uuid;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 class ReminderService
 {
     public function __construct(
         private readonly Connection $connection,
-        private readonly MailService $mailService,
-        private readonly SystemConfigService $systemConfig,
+        private readonly EntityRepository $orderRepository,
+        private readonly FlowDispatcher $flowDispatcher,
         private readonly PickupConfigResolver $pickupConfigResolver,
     ) {
     }
@@ -26,6 +29,7 @@ class ReminderService
     public function sendReminders(?SymfonyStyle $io = null): int
     {
         $now = new \DateTimeImmutable('now');
+        $context = Context::createDefaultContext();
 
         // Validate template exists
         $typeId = $this->connection->fetchOne(
@@ -77,23 +81,36 @@ SQL,
 
         $sent = 0;
         foreach ($rows as $row) {
-            $salesChannelId = $row['sales_channel_id'];
-            $languageId = $row['language_id'] ?? null;
-            $orderCreated = $row['order_created'] ? new \DateTimeImmutable((string) $row['order_created']) : null;
-            $email = (string) $row['email'];
-            $customerName = (string) ($row['customer_name'] ?: $email);
-            $orderNumber = (string) $row['order_number'];
+            $orderId = $row['order_id'];
+            if (!\is_string($orderId) || $orderId === '') {
+                continue;
+            }
 
+            $order = $this->loadOrder($orderId, $context);
+            if (!$order instanceof OrderEntity) {
+                continue;
+            }
+
+            $orderCreated = $row['order_created'] ? new \DateTimeImmutable((string) $row['order_created']) : null;
             if (!$orderCreated) {
                 continue;
             }
 
-            $salesChannelIdHex = is_string($salesChannelId) ? Uuid::fromBytesToHex($salesChannelId) : null;
-            $languageIdHex = is_string($languageId) ? Uuid::fromBytesToHex($languageId) : null;
+            $orderCustomer = $order->getOrderCustomer();
+            $email = (string) ($orderCustomer?->getEmail() ?? '');
+            if ($email === '') {
+                continue;
+            }
+
+            $salesChannelId = $order->getSalesChannelId();
+            $languageId = $order->getLanguageId();
+            $salesChannelIdHex = \is_string($salesChannelId) ? $salesChannelId : Uuid::fromBytesToHex((string) $row['sales_channel_id']);
+            $languageIdHex = \is_string($languageId) ? $languageId : (is_string($row['language_id']) ? Uuid::fromBytesToHex($row['language_id']) : null);
+            $orderNumber = (string) $order->getOrderNumber();
 
             $deliveryCustomFields = $this->decodeCustomFields($row['delivery_custom_fields'] ?? null);
             $snapshot = $this->pickupConfigResolver->extractSnapshotFromCustomFields($deliveryCustomFields)
-                ?? $this->pickupConfigResolver->resolve($salesChannelIdHex ?? $salesChannelId, $languageId);
+                ?? $this->pickupConfigResolver->resolve($salesChannelIdHex ?? '', $languageIdHex ? Uuid::fromHexToBytes($languageIdHex) : null);
 
             $pickupWindowDays = $snapshot['pickupWindowDays'];
             $storeName = $snapshot['storeName'] !== '' ? $snapshot['storeName'] : 'Ihr Markt';
@@ -105,62 +122,16 @@ SQL,
                 continue; // outside pickup window
             }
 
-            // Resolve translation for template
-            $templateTrans = null;
-            if (is_string($languageId)) {
-                $templateTrans = $this->connection->fetchAssociative(
-                    'SELECT subject, content_html, content_plain FROM mail_template_translation WHERE mail_template_id = :tid AND language_id = :lid',
-                    ['tid' => $templateId, 'lid' => $languageId]
-                );
-            }
-            if (!$templateTrans) {
-                $defaultLang = hex2bin('2fbb5fe2e29a4d70aa5854ce7ce3e20b');
-                $templateTrans = $this->connection->fetchAssociative(
-                    'SELECT subject, content_html, content_plain FROM mail_template_translation WHERE mail_template_id = :tid AND language_id = :lid',
-                    ['tid' => $templateId, 'lid' => $defaultLang]
-                );
-            }
-            if (!$templateTrans) {
-                $templateTrans = $this->connection->fetchAssociative(
-                    'SELECT subject, content_html, content_plain FROM mail_template_translation WHERE mail_template_id = :tid ORDER BY created_at DESC LIMIT 1',
-                    ['tid' => $templateId]
-                );
-            }
-            if (!$templateTrans) {
-                throw new \RuntimeException('No translation found for reminder template.');
-            }
-
-            $subject = (string) ($templateTrans['subject'] ?? '');
-            $contentHtml = (string) ($templateTrans['content_html'] ?? '');
-            $contentPlain = (string) ($templateTrans['content_plain'] ?? '');
-            if ($subject === '' && $contentHtml === '' && $contentPlain === '') {
-                throw new \RuntimeException('Reminder template translation has no subject or content.');
-            }
-
-            $data = [
-                'recipients' => [ $email => $customerName ],
-                ...(isset($salesChannelIdHex) ? ['salesChannelId' => $salesChannelIdHex] : []),
-                ...(isset($languageIdHex) ? ['languageId' => $languageIdHex] : []),
-                'senderName' => $this->resolveSenderName($salesChannelIdHex, $snapshot['storeName']),
-                'senderEmail' => $this->resolveSenderEmail($salesChannelIdHex),
-                'contentHtml' => $contentHtml,
-                'contentPlain' => $contentPlain,
-                'subject' => $subject,
-            ];
-            $templateData = [
-                'orderNumber' => $orderNumber,
-                'config' => [
-                    'storeName' => $snapshot['storeName'],
-                    'storeAddress' => $storeAddress,
-                    'openingHours' => $openingHoursCfg,
-                    'pickupWindowDays' => $pickupWindowDays,
-                ],
-            ];
-
             try {
-                $this->mailService->send($data, Context::createDefaultContext(), $templateData);
-                // Mark order as reminded to avoid duplicates
-                $orderId = $row['order_id'];
+                $event = new PickupReminderEvent(
+                    $context,
+                    $order,
+                    $salesChannelIdHex ?? '',
+                    $snapshot,
+                    $languageIdHex
+                );
+                $this->flowDispatcher->dispatch($event);
+
                 $orderVersionId = $row['order_version_id'];
                 if (is_string($orderId) && is_string($orderVersionId)) {
                     $this->connection->executeStatement(<<<'SQL'
@@ -203,21 +174,20 @@ SQL,
         return is_array($decoded) ? $decoded : [];
     }
 
-    private function resolveSenderName(?string $salesChannelId, string $storeName): string
+    private function loadOrder(string $orderId, Context $context): ?OrderEntity
     {
-        $configured = trim((string) ($this->systemConfig->get('core.mailerSettings.senderName', $salesChannelId) ?? ''));
+        $criteria = (new Criteria([$orderId]))
+            ->addAssociations([
+                'orderCustomer',
+                'orderCustomer.salutation',
+                'deliveries.shippingMethod',
+                'deliveries.shippingOrderAddress.country',
+                'deliveries.stateMachineState',
+            ]);
 
-        if ($configured !== '') {
-            return $configured;
-        }
+        /** @var OrderEntity|null $order */
+    $order = $this->orderRepository->search($criteria, $context)->first();
 
-        return $storeName !== '' ? $storeName : 'Click & Collect';
-    }
-
-    private function resolveSenderEmail(?string $salesChannelId): string
-    {
-        $configured = trim((string) ($this->systemConfig->get('core.mailerSettings.senderAddress', $salesChannelId) ?? ''));
-
-        return $configured !== '' ? $configured : 'no-reply@example.com';
+    return $order;
     }
 }

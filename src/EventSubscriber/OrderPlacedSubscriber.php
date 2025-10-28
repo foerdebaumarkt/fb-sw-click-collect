@@ -10,24 +10,13 @@ use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
-use Shopware\Core\Content\Mail\Service\MailService;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Shopware\Core\Content\MailTemplate\Aggregate\MailTemplateType\MailTemplateTypeEntity;
-use Shopware\Core\Content\MailTemplate\MailTemplateEntity;
 
 class OrderPlacedSubscriber implements EventSubscriberInterface
 {
-    private const STAFF_TEMPLATE_TYPE = 'fb_click_collect.staff_order_placed';
-    private ?string $cachedStaffTemplateId = null;
-
     public function __construct(
         private readonly EntityRepository $orderRepository,
         private readonly EntityRepository $orderDeliveryRepository,
-        private readonly EntityRepository $mailTemplateTypeRepository,
-        private readonly SystemConfigService $systemConfig,
-        private readonly MailService $mailService,
         private readonly PickupConfigResolver $pickupConfigResolver,
     ) {
     }
@@ -54,11 +43,6 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
         }
 
         $salesChannelId = $event->getSalesChannelId();
-        $storeEmail = (string) ($this->systemConfig->get('FoerdeClickCollect.config.storeEmail', $salesChannelId) ?? '');
-        if ($storeEmail === '') {
-            return; // no recipient configured
-        }
-
         $snapshot = $this->pickupConfigResolver->resolve($salesChannelId, $order->getLanguageId());
         $snapshotForStorage = [
             'storeName' => $snapshot['storeName'],
@@ -68,47 +52,6 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
             'pickupPreparationHours' => $snapshot['pickupPreparationHours'],
         ];
         $this->persistSnapshot($order, $snapshotForStorage, $context);
-
-        $templateId = $this->resolveStaffTemplateId($context);
-        if (!$templateId) {
-            error_log('[FoerdeClickCollect] no staff mail template registered; skipping notification');
-            return;
-        }
-
-        $storeName = $snapshotForStorage['storeName'] !== '' ? $snapshotForStorage['storeName'] : 'Store';
-        $templateData = [
-            'orderNumber' => $order->getOrderNumber(),
-            'order' => $order,
-            'config' => [
-                'pickupWindowDays' => $snapshotForStorage['pickupWindowDays'],
-                'pickupPreparationHours' => $snapshotForStorage['pickupPreparationHours'],
-                'storeName' => $snapshotForStorage['storeName'],
-                'storeAddress' => $snapshotForStorage['storeAddress'],
-                'openingHours' => $snapshotForStorage['openingHours'],
-            ],
-        ];
-
-        $senderName = trim((string) ($this->systemConfig->get('core.mailerSettings.senderName', $salesChannelId) ?? ''));
-        if ($senderName === '') {
-            $senderName = 'Click & Collect';
-        }
-        $senderEmail = trim((string) ($this->systemConfig->get('core.mailerSettings.senderAddress', $salesChannelId) ?? ''));
-
-        $data = [
-            'templateId' => $templateId,
-            'recipients' => [$storeEmail => $storeName ?: 'Store'],
-            'senderName' => $senderName,
-            'salesChannelId' => $salesChannelId,
-        ];
-        if ($senderEmail !== '') {
-            $data['senderEmail'] = $senderEmail;
-        }
-
-        try {
-            $this->mailService->send($data, $context, $templateData);
-        } catch (\Throwable $e) {
-            error_log('[FoerdeClickCollect] staff mail send failed: ' . $e->getMessage());
-        }
     }
 
     private function persistSnapshot(OrderEntity $order, array $snapshot, Context $context): void
@@ -158,35 +101,5 @@ class OrderPlacedSubscriber implements EventSubscriberInterface
         /** @var OrderEntity|null $order */
         $order = $this->orderRepository->search($criteria, $context)->first();
         return $order;
-    }
-
-    private function resolveStaffTemplateId(Context $context): ?string
-    {
-        if ($this->cachedStaffTemplateId !== null) {
-            return $this->cachedStaffTemplateId;
-        }
-
-        $criteria = (new Criteria())
-            ->addFilter(new EqualsFilter('technicalName', self::STAFF_TEMPLATE_TYPE))
-            ->addAssociation('mailTemplates')
-            ->setLimit(1);
-
-        /** @var MailTemplateTypeEntity|null $type */
-        $type = $this->mailTemplateTypeRepository->search($criteria, $context)->first();
-        if (!$type) {
-            return null;
-        }
-
-        $mailTemplates = $type->getMailTemplates();
-        if (!$mailTemplates || $mailTemplates->count() === 0) {
-            return null;
-        }
-
-        /** @var MailTemplateEntity|null $template */
-        $template = $mailTemplates->first();
-
-        $this->cachedStaffTemplateId = $template?->getId();
-
-        return $this->cachedStaffTemplateId;
     }
 }

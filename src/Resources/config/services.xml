@@ -8,7 +8,11 @@
         <!-- Shared pickup configuration helpers -->
         <service id="FoerdeClickCollect\Service\PickupConfigResolver" />
         <!-- Core reminder service -->
-        <service id="FoerdeClickCollect\Service\ReminderService" />
+            <service id="FoerdeClickCollect\Service\ReminderService">
+                <argument type="service" id="Doctrine\DBAL\Connection"/>
+                <argument type="service" id="order.repository"/>
+                <argument type="service" id="Shopware\Core\Content\Flow\Dispatching\FlowDispatcher"/>
+        </service>
         <!-- Payment handler for Click & Collect (offline, synchronous) -->
         <service id="FoerdeClickCollect\Service\Payment\ClickCollectPaymentHandler">
             <tag name="shopware.payment.method"/>
@@ -18,7 +22,6 @@
             <tag name="kernel.event_subscriber"/>
             <argument type="service" id="order.repository"/>
             <argument type="service" id="order_delivery.repository"/>
-            <argument type="service" id="mail_template_type.repository"/>
         </service>
         <service id="FoerdeClickCollect\EventSubscriber\OrderDeliveryReadySubscriber">
             <tag name="kernel.event_subscriber"/>
