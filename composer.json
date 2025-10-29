@@ -2,6 +2,7 @@
     "name": "foerdebaumarkt/fb-sw-click-collect",
     "description": "Shopware 6 plugin adding click & collect capabilities for Föderbaumarkt.",
     "type": "shopware-platform-plugin",
+    "version": "0.1.1",
     "license": "proprietary",
     "require": {
     "php": "^8.1 || ^8.2 || ^8.3",
