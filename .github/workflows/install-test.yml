@@ -1,0 +1,90 @@
+name: Plugin Install Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  DOCKWARE_IMAGE: dockware/ci:shopware_6.7.3.1
+
+jobs:
+  install:
+    name: Build and install plugin
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine plugin metadata
+        id: metadata
+        run: |
+          set -euo pipefail
+          plugin_name=$(jq -r '.extra["shopware-plugin-class"] // empty' composer.json)
+          if [ -n "${plugin_name}" ]; then
+            plugin_name=${plugin_name##*\\}
+          else
+            plugin_name=$(jq -r '.name // empty' composer.json)
+            plugin_name=${plugin_name##*/}
+          fi
+          plugin_name=${plugin_name%%.php}
+          sanitized=$(printf '%s' "${plugin_name}" | tr -cd '[:alnum:]_-')
+          if [ -z "${sanitized}" ]; then
+            echo "Unable to determine plugin name from composer.json" >&2
+            exit 1
+          fi
+          echo "PLUGIN_NAME=${sanitized}" >> "${GITHUB_ENV}"
+          echo "plugin_name=${sanitized}" >> "${GITHUB_OUTPUT}"
+
+      - name: Install shopware-cli
+        uses: shopware/shopware-cli-action@v1
+
+      - name: Build plugin archive
+        run: |
+          set -euo pipefail
+          shopware-cli extension zip . --git-commit "${GITHUB_SHA}" --filename "${PLUGIN_NAME}.zip"
+
+      - name: Start dockware container
+        run: |
+          set -euo pipefail
+          docker pull "${DOCKWARE_IMAGE}"
+          docker run -d --name shopware-test "${DOCKWARE_IMAGE}" >/dev/null
+          for _ in {1..60}; do
+            if docker exec shopware-test bash -lc 'cd /var/www/html && php bin/console system:info' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Shopware container did not become ready in time" >&2
+          docker logs shopware-test || true
+          exit 1
+
+      - name: Install plugin
+        run: |
+          set -euo pipefail
+          docker cp "${PLUGIN_NAME}.zip" shopware-test:/tmp/${PLUGIN_NAME}.zip
+          docker exec shopware-test bash -lc "cd /var/www/html && rm -rf custom/plugins/${PLUGIN_NAME} && unzip -q /tmp/${PLUGIN_NAME}.zip -d custom/plugins"
+          docker exec shopware-test bash -lc "cd /var/www/html && php bin/console plugin:refresh"
+          docker exec shopware-test bash -lc "cd /var/www/html && php bin/console plugin:install --activate ${PLUGIN_NAME}"
+          docker exec shopware-test bash -lc "cd /var/www/html && php bin/console plugin:list --format=json" | jq '.[] | select(.name == "'"${PLUGIN_NAME}"'")'
+
+      - name: Run basic diagnostics
+        run: |
+          set -euo pipefail
+          docker exec shopware-test bash -lc "cd /var/www/html && php bin/console plugin:health:check ${PLUGIN_NAME}"
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          docker logs shopware-test || true
+
+      - name: Stop container
+        if: always()
+        run: |
+          docker rm -f shopware-test >/dev/null 2>&1 || true
