@@ -1,12 +1,12 @@
 {
   "flow": {
     "id": "4503d09c5ef34a95a44cfbf7ad41ac10",
-    "name": "Foerde Click & Collect ready for pickup",
+    "name": "Click & Collect ready for pickup",
   "eventName": "state_enter.order_delivery.state.ready",
     "active": 1,
     "priority": 1,
     "createdAt": null,
-    "description": "Provisioned by Foerde Click & Collect plugin",
+    "description": "Provisioned by Click & Collect plugin",
     "customFields": null
   },
   "sequences": [

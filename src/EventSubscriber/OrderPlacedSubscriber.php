@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\EventSubscriber;
+namespace FbClickCollect\EventSubscriber;
 
-use FoerdeClickCollect\Service\PickupConfigResolver;
+use FbClickCollect\Service\PickupConfigResolver;
 use Shopware\Core\Checkout\Cart\Event\CheckoutOrderPlacedEvent;
 use Shopware\Core\Checkout\Order\OrderDeliveryEntity;
 use Shopware\Core\Checkout\Order\OrderEntity;

@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Migration;
+namespace FbClickCollect\Migration;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
@@ -110,11 +110,11 @@ class Migration1761264400StaffMailTemplate extends MigrationStep
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
 {% set fallbackPickup = clickCollectPickup|default({}) %}
 {% set pickup = {
-    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
-    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
-    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
-    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
-    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+    'storeName': pickupFields.fb_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.fb_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.fb_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.fb_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
 } %}
 <h3>Abholhinweise</h3>
 <p>Bitte bereitet die Bestellung innerhalb von <strong>{{ pickup.pickupPreparationHours|default(4) }}</strong> Stunden vor. Die Abholung ist für <strong>{{ pickup.pickupWindowDays|default(2) }}</strong> Tage möglich.</p>
@@ -143,11 +143,11 @@ Gesamtsumme: {{ order.amountTotal|number_format(2, ',', '.') }} €
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
 {% set fallbackPickup = clickCollectPickup|default({}) %}
 {% set pickup = {
-  'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
-  'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
-  'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
-  'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
-  'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+  'storeName': pickupFields.fb_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+  'storeAddress': pickupFields.fb_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+  'openingHours': pickupFields.fb_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+  'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+  'pickupPreparationHours': pickupFields.fb_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
 } %}
 
 Abholhinweise:
@@ -199,11 +199,11 @@ TEXT;
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
 {% set fallbackPickup = clickCollectPickup|default({}) %}
 {% set pickup = {
-    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
-    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
-    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
-    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
-    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+    'storeName': pickupFields.fb_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.fb_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.fb_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.fb_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
 } %}
 <h3>Pickup details</h3>
 <p>Please prepare the order within <strong>{{ pickup.pickupPreparationHours|default(4) }}</strong> hours. Pickup is available for <strong>{{ pickup.pickupWindowDays|default(2) }}</strong> days.</p>
@@ -232,11 +232,11 @@ Total: {{ order.amountTotal|number_format(2, '.', ',') }} €
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
 {% set fallbackPickup = clickCollectPickup|default({}) %}
 {% set pickup = {
-  'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
-  'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
-  'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
-  'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
-  'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+  'storeName': pickupFields.fb_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+  'storeAddress': pickupFields.fb_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+  'openingHours': pickupFields.fb_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+  'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+  'pickupPreparationHours': pickupFields.fb_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
 } %}
 
 Pickup details:

@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Event;
+namespace FbClickCollect\Event;
 
 use Shopware\Core\Checkout\Order\OrderDefinition;
 use Shopware\Core\Checkout\Order\OrderEntity;
@@ -24,7 +24,7 @@ use Symfony\Contracts\EventDispatcher\Event;
 #[Package('services-settings')]
 class PickupReminderEvent extends Event implements FlowEventAware, OrderAware, SalesChannelAware, MailAware, CustomerAware, LanguageAware, ScalarValuesAware
 {
-    public const EVENT_NAME = 'foerde.click_collect.pickup_reminder';
+    public const EVENT_NAME = 'fb.click_collect.pickup_reminder';
 
     /** @var array{storeName:string,storeAddress:string,openingHours:string,pickupWindowDays:int,pickupPreparationHours:int} */
     private array $snapshot;

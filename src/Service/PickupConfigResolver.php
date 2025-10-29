@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Service;
+namespace FbClickCollect\Service;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Defaults;
@@ -12,12 +12,12 @@ use Shopware\Core\System\SystemConfig\SystemConfigService;
  */
 class PickupConfigResolver
 {
-    public const FIELD_STORE_NAME = 'foerde_click_collect_store_name';
-    public const FIELD_STORE_ADDRESS = 'foerde_click_collect_store_address';
-    public const FIELD_OPENING_HOURS = 'foerde_click_collect_opening_hours';
-    public const FIELD_STORE_EMAIL = 'foerde_click_collect_store_email';
-    public const FIELD_PICKUP_WINDOW_DAYS = 'foerde_click_collect_pickup_window_days';
-    public const FIELD_PICKUP_PREPARATION_HOURS = 'foerde_click_collect_pickup_preparation_hours';
+    public const FIELD_STORE_NAME = 'fb_click_collect_store_name';
+    public const FIELD_STORE_ADDRESS = 'fb_click_collect_store_address';
+    public const FIELD_OPENING_HOURS = 'fb_click_collect_opening_hours';
+    public const FIELD_STORE_EMAIL = 'fb_click_collect_store_email';
+    public const FIELD_PICKUP_WINDOW_DAYS = 'fb_click_collect_pickup_window_days';
+    public const FIELD_PICKUP_PREPARATION_HOURS = 'fb_click_collect_pickup_preparation_hours';
 
     public function __construct(
         private readonly SystemConfigService $systemConfig,
@@ -39,9 +39,9 @@ class PickupConfigResolver
         $languageBytes = $languageId ? $this->normalizeToBytes($languageId) : null;
         $localeCode = $this->resolveLocaleCode($languageBytes);
 
-        $storeName = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeName', $salesChannelHex));
+        $storeName = $this->sanitizeString($this->systemConfig->get('FbClickCollect.config.storeName', $salesChannelHex));
         if ($storeName === '') {
-            $storeName = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeName'));
+            $storeName = $this->sanitizeString($this->systemConfig->get('FbClickCollect.config.storeName'));
         }
         if ($storeName === '') {
             $resolvedChannelName = $this->resolveSalesChannelName($salesChannelId, $languageBytes);
@@ -53,9 +53,9 @@ class PickupConfigResolver
             $storeName = $this->fallbackStoreName($localeCode);
         }
 
-        $storeAddress = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeAddress', $salesChannelHex));
+        $storeAddress = $this->sanitizeString($this->systemConfig->get('FbClickCollect.config.storeAddress', $salesChannelHex));
         if ($storeAddress === '') {
-            $storeAddress = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeAddress'));
+            $storeAddress = $this->sanitizeString($this->systemConfig->get('FbClickCollect.config.storeAddress'));
         }
         if ($storeAddress === '') {
             $basicAddress = $this->sanitizeString($this->systemConfig->get('core.basicInformation.address', $salesChannelHex));
@@ -65,14 +65,14 @@ class PickupConfigResolver
             $storeAddress = $basicAddress;
         }
 
-        $openingHours = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours', $salesChannelHex));
+        $openingHours = $this->sanitizeString($this->systemConfig->get('FbClickCollect.config.storeOpeningHours', $salesChannelHex));
         if ($openingHours === '') {
-            $openingHours = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeOpeningHours'));
+            $openingHours = $this->sanitizeString($this->systemConfig->get('FbClickCollect.config.storeOpeningHours'));
         }
 
-        $storeEmail = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeEmail', $salesChannelHex));
+        $storeEmail = $this->sanitizeString($this->systemConfig->get('FbClickCollect.config.storeEmail', $salesChannelHex));
         if ($storeEmail === '') {
-            $storeEmail = $this->sanitizeString($this->systemConfig->get('FoerdeClickCollect.config.storeEmail'));
+            $storeEmail = $this->sanitizeString($this->systemConfig->get('FbClickCollect.config.storeEmail'));
         }
         if ($storeEmail === '') {
             $storeEmail = $this->sanitizeString($this->systemConfig->get('core.basicInformation.email', $salesChannelHex));
@@ -87,15 +87,15 @@ class PickupConfigResolver
             }
         }
 
-        $pickupWindowConfigured = $this->systemConfig->get('FoerdeClickCollect.config.pickupWindowDays', $salesChannelHex);
+        $pickupWindowConfigured = $this->systemConfig->get('FbClickCollect.config.pickupWindowDays', $salesChannelHex);
         if (!is_numeric($pickupWindowConfigured)) {
-            $pickupWindowConfigured = $this->systemConfig->get('FoerdeClickCollect.config.pickupWindowDays');
+            $pickupWindowConfigured = $this->systemConfig->get('FbClickCollect.config.pickupWindowDays');
         }
         $pickupWindowDays = $this->sanitizeInt($pickupWindowConfigured, 2);
 
-        $pickupPrepConfigured = $this->systemConfig->get('FoerdeClickCollect.config.pickupPreparationHours', $salesChannelHex);
+        $pickupPrepConfigured = $this->systemConfig->get('FbClickCollect.config.pickupPreparationHours', $salesChannelHex);
         if (!is_numeric($pickupPrepConfigured)) {
-            $pickupPrepConfigured = $this->systemConfig->get('FoerdeClickCollect.config.pickupPreparationHours');
+            $pickupPrepConfigured = $this->systemConfig->get('FbClickCollect.config.pickupPreparationHours');
         }
         $pickupPreparationHours = $this->sanitizeInt($pickupPrepConfigured, 4);
 

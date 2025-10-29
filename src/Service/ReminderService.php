@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Service;
+namespace FbClickCollect\Service;
 
 use Doctrine\DBAL\Connection;
-use FoerdeClickCollect\Event\PickupReminderEvent;
+use FbClickCollect\Event\PickupReminderEvent;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Content\Flow\Dispatching\FlowDispatcher;
 use Shopware\Core\Framework\Context;
@@ -14,6 +14,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class ReminderService
 {
+    private const CUSTOM_FIELD_REMINDER_SENT = 'fb_click_collect_reminder_sent';
+    private const CUSTOM_FIELD_REMINDER_SENT_AT = 'fb_click_collect_reminder_sent_at';
+
     public function __construct(
         private readonly Connection $connection,
         private readonly EntityRepository $orderRepository,
@@ -47,7 +50,8 @@ class ReminderService
             throw new \RuntimeException('No mail_template found for type fb_click_collect.reminder. Create a template in Admin.');
         }
 
-        $rows = $this->connection->fetchAllAssociative(<<<'SQL'
+        $reminderJsonPath = '$.' . self::CUSTOM_FIELD_REMINDER_SENT;
+        $rows = $this->connection->fetchAllAssociative(sprintf(<<<'SQL'
 SELECT
     o.id              AS order_id,
     o.version_id      AS order_version_id,
@@ -55,8 +59,8 @@ SELECT
     o.sales_channel_id,
     o.language_id,
     o.created_at      AS order_created,
-    o.custom_fields   AS custom_fields,
     od.custom_fields  AS delivery_custom_fields,
+    o.custom_fields   AS custom_fields,
     oc.email,
     CONCAT_WS(" ", oc.first_name, oc.last_name) AS customer_name,
     sm.technical_name AS shipping_tech
@@ -66,13 +70,16 @@ INNER JOIN order_customer oc ON oc.order_id = o.id AND oc.version_id = o.version
 INNER JOIN shipping_method sm ON sm.id = od.shipping_method_id
 INNER JOIN state_machine_state sms ON sms.id = od.state_id
 WHERE sm.technical_name = :tech
-  AND sms.technical_name = :stateReady
-  AND (
+    AND sms.technical_name = :stateReady
+    AND (
         o.custom_fields IS NULL
-        OR JSON_EXTRACT(o.custom_fields, '$.foerde_cc_reminderSent') IS NULL
-        OR JSON_EXTRACT(o.custom_fields, '$.foerde_cc_reminderSent') = false
-  )
+        OR JSON_EXTRACT(o.custom_fields, '%s') IS NULL
+        OR JSON_EXTRACT(o.custom_fields, '%s') = false
+    )
 SQL,
+            $reminderJsonPath,
+            $reminderJsonPath,
+        ),
             [
                 'tech' => 'click_collect',
                 'stateReady' => 'ready',
@@ -108,6 +115,14 @@ SQL,
             $languageIdHex = \is_string($languageId) ? $languageId : (is_string($row['language_id']) ? Uuid::fromBytesToHex($row['language_id']) : null);
             $orderNumber = (string) $order->getOrderNumber();
 
+            $orderCustomFields = $order->getCustomFields();
+            if (!is_array($orderCustomFields) || $orderCustomFields === []) {
+                $orderCustomFields = $this->decodeCustomFields($row['custom_fields'] ?? null);
+            }
+            if ($this->hasReminderBeenSent($orderCustomFields ?: null)) {
+                continue;
+            }
+
             $deliveryCustomFields = $this->decodeCustomFields($row['delivery_custom_fields'] ?? null);
             $snapshot = $this->pickupConfigResolver->extractSnapshotFromCustomFields($deliveryCustomFields)
                 ?? $this->pickupConfigResolver->resolve($salesChannelIdHex ?? '', $languageIdHex ? Uuid::fromHexToBytes($languageIdHex) : null);
@@ -134,16 +149,7 @@ SQL,
 
                 $orderVersionId = $row['order_version_id'];
                 if (is_string($orderId) && is_string($orderVersionId)) {
-                    $this->connection->executeStatement(<<<'SQL'
-UPDATE `order`
-SET custom_fields = JSON_SET(COALESCE(custom_fields, JSON_OBJECT()),
-    '$.foerde_cc_reminderSent', true,
-    '$.foerde_cc_reminderSentAt', CAST(NOW() AS CHAR)
-)
-WHERE id = :id AND version_id = :vid
-SQL,
-                        ['id' => $orderId, 'vid' => $orderVersionId]
-                    );
+                    $this->markReminderPersisted($orderId, $orderVersionId);
                 }
                 $sent++;
             } catch (\Throwable $e) {
@@ -186,8 +192,53 @@ SQL,
             ]);
 
         /** @var OrderEntity|null $order */
-    $order = $this->orderRepository->search($criteria, $context)->first();
+        $order = $this->orderRepository->search($criteria, $context)->first();
 
-    return $order;
+        return $order;
+    }
+
+    private function hasReminderBeenSent(?array $customFields): bool
+    {
+        if (!$customFields) {
+            return false;
+        }
+
+        if (!array_key_exists(self::CUSTOM_FIELD_REMINDER_SENT, $customFields)) {
+            return false;
+        }
+
+        $value = $customFields[self::CUSTOM_FIELD_REMINDER_SENT];
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return (bool) $value;
+        }
+
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+
+            return $normalized !== '' && $normalized !== '0' && $normalized !== 'false';
+        }
+
+        return false;
+    }
+
+    private function markReminderPersisted(string $orderId, string $orderVersionId): void
+    {
+        $sql = sprintf(
+            "UPDATE `order`
+SET custom_fields = JSON_SET(COALESCE(custom_fields, JSON_OBJECT()),
+    '$.%s', true,
+    '$.%s', CAST(NOW() AS CHAR)
+)
+WHERE id = :id AND version_id = :vid",
+            self::CUSTOM_FIELD_REMINDER_SENT,
+            self::CUSTOM_FIELD_REMINDER_SENT_AT
+        );
+
+        $this->connection->executeStatement($sql, ['id' => $orderId, 'vid' => $orderVersionId]);
     }
 }

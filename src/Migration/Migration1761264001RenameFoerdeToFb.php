@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Migration;
+namespace FbClickCollect\Migration;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
@@ -19,7 +19,7 @@ class Migration1761264001RenameFoerdeToFb extends MigrationStep
             'name' => 'fb_click_collect.ready',
         ]);
         $foerdeTypeId = $connection->fetchOne('SELECT id FROM mail_template_type WHERE technical_name = :name', [
-            'name' => 'foerde_click_collect.ready',
+            'name' => 'fb_click_collect.ready',
         ]);
 
         if (!$fbTypeId && $foerdeTypeId) {

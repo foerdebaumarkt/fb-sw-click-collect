@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Command;
+namespace FbClickCollect\Command;
 
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -13,7 +13,7 @@ class SendRemindersCommand extends Command
     protected static $defaultName = 'fb:click-collect:send-reminders';
     protected static $defaultDescription = 'Send Click & Collect pickup reminders for ready deliveries within pickup window';
 
-    public function __construct(private readonly \FoerdeClickCollect\Service\ReminderService $reminderService)
+    public function __construct(private readonly \FbClickCollect\Service\ReminderService $reminderService)
     {
         parent::__construct(self::$defaultName);
     }

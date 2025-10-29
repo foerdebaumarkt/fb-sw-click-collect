@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Migration;
+namespace FbClickCollect\Migration;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
@@ -22,7 +22,7 @@ class Migration1761265000PickupSnapshotFields extends MigrationStep
 
     public function update(Connection $connection): void
     {
-        $setName = 'foerde_click_collect_delivery';
+        $setName = 'fb_click_collect_delivery';
         $setId = $this->getCustomFieldSetId($connection, $setName);
         if (!$setId) {
             $setId = Uuid::randomBytes();
@@ -45,34 +45,34 @@ class Migration1761265000PickupSnapshotFields extends MigrationStep
 
         $this->ensureSetRelation($connection, $setId, 'order_delivery');
 
-        $this->ensureCustomField($connection, $setId, 'foerde_click_collect_store_name', 'text', [
+        $this->ensureCustomField($connection, $setId, 'fb_click_collect_store_name', 'text', [
             'label' => [
                 'en-GB' => 'Store name',
                 'de-DE' => 'Marktname',
             ],
         ]);
-        $this->ensureCustomField($connection, $setId, 'foerde_click_collect_store_address', 'text', [
+        $this->ensureCustomField($connection, $setId, 'fb_click_collect_store_address', 'text', [
             'label' => [
                 'en-GB' => 'Store address',
                 'de-DE' => 'Marktadresse',
             ],
             'componentName' => 'sw-textarea-field',
         ]);
-        $this->ensureCustomField($connection, $setId, 'foerde_click_collect_opening_hours', 'text', [
+        $this->ensureCustomField($connection, $setId, 'fb_click_collect_opening_hours', 'text', [
             'label' => [
                 'en-GB' => 'Opening hours',
                 'de-DE' => 'Oeffnungszeiten',
             ],
             'componentName' => 'sw-textarea-field',
         ]);
-        $this->ensureCustomField($connection, $setId, 'foerde_click_collect_pickup_window_days', 'int', [
+        $this->ensureCustomField($connection, $setId, 'fb_click_collect_pickup_window_days', 'int', [
             'label' => [
                 'en-GB' => 'Pickup window (days)',
                 'de-DE' => 'Abholfenster (Tage)',
             ],
             'numberType' => 'int',
         ]);
-        $this->ensureCustomField($connection, $setId, 'foerde_click_collect_pickup_preparation_hours', 'int', [
+        $this->ensureCustomField($connection, $setId, 'fb_click_collect_pickup_preparation_hours', 'int', [
             'label' => [
                 'en-GB' => 'Preparation time (hours)',
                 'de-DE' => 'Vorbereitung (Stunden)',

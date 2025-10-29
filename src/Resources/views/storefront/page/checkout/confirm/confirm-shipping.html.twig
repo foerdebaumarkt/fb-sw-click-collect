@@ -2,18 +2,18 @@
 
 {#
   Add pickup instructions and a static store card when Click & Collect is selected.
-  Uses system config under FoerdeClickCollect.config.*
+  Uses system config under FbClickCollect.config.*
 #}
 {% block page_checkout_confirm_shipping %}
     {{ parent() }}
 
     {% set isClickCollect = context.shippingMethod is defined and context.shippingMethod and context.shippingMethod.technicalName == 'click_collect' %}
     {% if isClickCollect %}
-        {% set pickupDays = config('FoerdeClickCollect.config.pickupWindowDays') ?? 2 %}
-        {% set prepHours = config('FoerdeClickCollect.config.pickupPreparationHours') ?? 4 %}
-        {% set storeName = config('FoerdeClickCollect.config.storeName') %}
-        {% set storeAddress = config('FoerdeClickCollect.config.storeAddress') %}
-        {% set openingHours = config('FoerdeClickCollect.config.storeOpeningHours') %}
+        {% set pickupDays = config('FbClickCollect.config.pickupWindowDays') ?? 2 %}
+        {% set prepHours = config('FbClickCollect.config.pickupPreparationHours') ?? 4 %}
+        {% set storeName = config('FbClickCollect.config.storeName') %}
+        {% set storeAddress = config('FbClickCollect.config.storeAddress') %}
+        {% set openingHours = config('FbClickCollect.config.storeOpeningHours') %}
 
         <div class="card my-3">
             <div class="card-body">

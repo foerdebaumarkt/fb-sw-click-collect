@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Migration;
+namespace FbClickCollect\Migration;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
@@ -19,12 +19,12 @@ class Migration1761266004EnsureLiteralStaffRecipient extends MigrationStep
         $flowId = $this->hexToBytes('cad8d95db611406a96332835a2affb3c');
         $sequenceId = $this->hexToBytes('7377b721908f4a76a56e476629f9d198');
 
-        $storeEmail = $this->getConfigString($connection, 'FoerdeClickCollect.config.storeEmail');
+        $storeEmail = $this->getConfigString($connection, 'FbClickCollect.config.storeEmail');
         if ($storeEmail === null || $storeEmail === '') {
             return;
         }
 
-        $storeName = $this->getConfigString($connection, 'FoerdeClickCollect.config.storeName');
+        $storeName = $this->getConfigString($connection, 'FbClickCollect.config.storeName');
 
         $configJson = $connection->fetchOne(
             'SELECT config FROM flow_sequence WHERE id = :id AND flow_id = :flowId',

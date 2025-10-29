@@ -4,7 +4,7 @@ This plan assumes Shopware 6.7 CE as the baseline and follows the guidance from 
 
 ## 1. Plugin Foundation
 
-- Generate minimal plugin skeleton (`composer.json`, `src/FoerdeClickCollect.php`, `src/Resources/config/services.xml`) per [Plugin Base Guide], including system config schema to control the customer pickup window in full days (default 2) and optional pickup-expiry override, plus registration of a Shopware scheduled task for reminder dispatching.
+- Generate minimal plugin skeleton (`composer.json`, `src/FbClickCollect.php`, `src/Resources/config/services.xml`) per [Plugin Base Guide], including system config schema to control the customer pickup window in full days (default 2) and optional pickup-expiry override, plus registration of a Shopware scheduled task for reminder dispatching.
 - Register autoloading and metadata (label/description, compatibility `shopware/core ~6.7`) and provide activation lifecycle hooks.
 - Prepare basic README, LICENSE, CI placeholders.
 

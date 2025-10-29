@@ -14,7 +14,7 @@ Provision the Click & Collect order-confirmation flow via code so it survives `m
 
 | Branch | Condition | Actions |
 | --- | --- | --- |
-| **Click & Collect branch** | Rule passes (order uses `click_collect` shipping) | 1. Send email using template **“Click & Collect: Order confirmation”** (customer copy).<br>2. Send email using template **“Click & Collect: Staff notification”** with recipient resolved from config.<br>&nbsp;&nbsp;• To: `FoerdeClickCollect.config.storeEmail`.<br>&nbsp;&nbsp;• Name: `FoerdeClickCollect.config.storeName`.<br>&nbsp;&nbsp;• Fallbacks handled below. |
+| **Click & Collect branch** | Rule passes (order uses `click_collect` shipping) | 1. Send email using template **“Click & Collect: Order confirmation”** (customer copy).<br>2. Send email using template **“Click & Collect: Staff notification”** with recipient resolved from config.<br>&nbsp;&nbsp;• To: `FbClickCollect.config.storeEmail`.<br>&nbsp;&nbsp;• Name: `FbClickCollect.config.storeName`.<br>&nbsp;&nbsp;• Fallbacks handled below. |
 | **Default branch** | Rule fails (not a Click & Collect shipment) | 1. Send email using core template **“Order confirmation”** so non Click & Collect orders retain the standard mail even after the core flow is disabled. |
 
 ### Staff Recipient Fallbacks
@@ -30,7 +30,7 @@ Provision the Click & Collect order-confirmation flow via code so it survives `m
 
 ### Additional Flow: Pickup Reminder
 
-- **Event**: `foerde.click_collect.pickup_reminder` (custom business event emitted when a reminder should be delivered).
+- **Event**: `fb.click_collect.pickup_reminder` (custom business event emitted when a reminder should be delivered).
 - **Action**: Single `action.mail.send` using template **“Click & Collect: Pickup reminder”**; send to the default customer recipients with no additional branching.
 - **Notes**: Reminder scheduling logic lives outside the flow (e.g. cron job emits the event); flow just delivers the mail once triggered.
 
@@ -52,7 +52,7 @@ Provision the Click & Collect order-confirmation flow via code so it survives `m
   - Configure the staff email action to resolve recipients dynamically via Twig/expression, including fallbacks.
   - Seed the pickup-reminder mail template/type if it does not already exist so the flow can reference deterministic IDs.
   - Provision a second flow (`state_enter.order_delivery.state.ready`) that immediately sends the ready-for-pickup template with a single mail action.
-  - Provision a third flow (`foerde.click_collect.pickup_reminder`) that simply sends the pickup-reminder template when the event fires.
+  - Provision a third flow (`fb.click_collect.pickup_reminder`) that simply sends the pickup-reminder template when the event fires.
 - [x] **Deactivate the stock confirmation flow** in the same migration (set `active = 0` on the core `Order placed` flow) to avoid duplicate customer mails.
 - [ ] **Testing**:
   - Integration test asserting the new flow exists and the stock flow is disabled after plugin install/activate.

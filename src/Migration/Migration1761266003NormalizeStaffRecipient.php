@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Migration;
+namespace FbClickCollect\Migration;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
@@ -57,8 +57,8 @@ class Migration1761266003NormalizeStaffRecipient extends MigrationStep
 
         $current = $this->normalizeRecipientData($recipientData);
 
-        $storeEmail = $this->getConfigString($connection, 'FoerdeClickCollect.config.storeEmail');
-        $storeName = $this->getConfigString($connection, 'FoerdeClickCollect.config.storeName');
+        $storeEmail = $this->getConfigString($connection, 'FbClickCollect.config.storeEmail');
+        $storeName = $this->getConfigString($connection, 'FbClickCollect.config.storeName');
 
         $target = $current;
 

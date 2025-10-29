@@ -1,14 +1,14 @@
 {
-    "name": "foerdebaumarkt/fb-sw-click-collect",
-    "description": "Shopware 6 plugin adding click & collect capabilities for Föderbaumarkt.",
+    "name": "fb/click-collect",
+    "description": "Shopware 6 plugin delivering flexible click & collect capabilities for omnichannel retailers.",
     "type": "shopware-platform-plugin",
     "version": "0.1.1",
     "license": "proprietary",
     "authors": [
         {
-            "name": "Foerdebaumarkt",
-            "email": "entwicklung@foerdebaumarkt.de",
-            "homepage": "https://www.foerde-baumarkt.de/"
+            "name": "FB Commerce",
+            "email": "support@fb-commerce.dev",
+            "homepage": "https://www.fb-commerce.dev/"
         }
     ],
     "require": {
@@ -17,26 +17,26 @@
     },
     "autoload": {
         "psr-4": {
-            "FoerdeClickCollect\\": "src/"
+            "FbClickCollect\\": "src/"
         }
     },
     "extra": {
-        "shopware-plugin-class": "FoerdeClickCollect\\FoerdeClickCollect",
+        "shopware-plugin-class": "FbClickCollect\\FbClickCollect",
         "label": {
-            "en-GB": "Foerde Click & Collect",
-            "de-DE": "Foerde Click & Collect"
+            "en-GB": "Click & Collect",
+            "de-DE": "Click & Collect"
         },
         "manufacturerLink": {
-            "en-GB": "https://www.foerde-baumarkt.de/",
-            "de-DE": "https://www.foerde-baumarkt.de/"
+            "en-GB": "https://www.fb-commerce.dev/",
+            "de-DE": "https://www.fb-commerce.dev/"
         },
         "supportLink": {
-            "en-GB": "https://www.foerde-baumarkt.de/kontakt",
-            "de-DE": "https://www.foerde-baumarkt.de/kontakt"
+            "en-GB": "mailto:support@fb-commerce.dev",
+            "de-DE": "mailto:support@fb-commerce.dev"
         },
         "description": {
-            "en-GB": "Delivers robust click & collect workflows for Foerdebaumarkt stores, provisioning flows, staff notifications, pickup reminders, shipping/payment options, and configurable store details.",
-            "de-DE": "Ermöglicht zuverlässige Click-&-Collect-Prozesse in Foerdebaumarkt-Filialen, richtet Flows, Mitarbeiterbenachrichtigungen, Abholerinnerungen sowie Versand- und Zahlungsoptionen ein."
+            "en-GB": "Delivers robust click & collect workflows, provisioning flows, staff notifications, pickup reminders, shipping/payment options, and configurable store details.",
+            "de-DE": "Ermöglicht zuverlässige Click-&-Collect-Prozesse, richtet Flows, Mitarbeiterbenachrichtigungen, Abholerinnerungen sowie Versand- und Zahlungsoptionen ein."
         }
     }
 }

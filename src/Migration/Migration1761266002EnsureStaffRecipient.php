@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Migration;
+namespace FbClickCollect\Migration;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
@@ -30,19 +30,19 @@ class Migration1761266002EnsureStaffRecipient extends MigrationStep
             return;
         }
 
-        $storeEmail = $this->getConfigString($connection, 'FoerdeClickCollect.config.storeEmail');
-        $storeName = $this->getConfigString($connection, 'FoerdeClickCollect.config.storeName');
+        $storeEmail = $this->getConfigString($connection, 'FbClickCollect.config.storeEmail');
+        $storeName = $this->getConfigString($connection, 'FbClickCollect.config.storeName');
 
-        $staffRecipientEmailExpression = '{{ (order.deliveries|first ? ((order.deliveries|first).customFields.foerde_click_collect_store_email|default(null)) : null)
-            ?: config("FoerdeClickCollect.config.storeEmail", salesChannel.id)
-            ?: config("FoerdeClickCollect.config.storeEmail")
+        $staffRecipientEmailExpression = '{{ (order.deliveries|first ? ((order.deliveries|first).customFields.fb_click_collect_store_email|default(null)) : null)
+            ?: config("FbClickCollect.config.storeEmail", salesChannel.id)
+            ?: config("FbClickCollect.config.storeEmail")
             ?: config("core.basicInformation.email", salesChannel.id)
             ?: config("core.basicInformation.email")
             ?: config("core.mailerSettings.senderAddress", salesChannel.id)
             ?: config("core.mailerSettings.senderAddress") }}';
 
-        $staffRecipientNameExpression = '{{ (order.deliveries|first ? ((order.deliveries|first).customFields.foerde_click_collect_store_name|default(null)) : null)
-            ?? config("FoerdeClickCollect.config.storeName", salesChannel.id)
+        $staffRecipientNameExpression = '{{ (order.deliveries|first ? ((order.deliveries|first).customFields.fb_click_collect_store_name|default(null)) : null)
+            ?? config("FbClickCollect.config.storeName", salesChannel.id)
             ?? config("core.basicInformation.company", salesChannel.id)
             ?? (salesChannel.translated.name ?? "Shop Team") }}';
 

@@ -1,12 +1,12 @@
 {
   "flow": {
     "id": "798a855bc93c48a7976d5c6406f3e73d",
-    "name": "Foerde Click & Collect pickup reminder",
-    "eventName": "foerde.click_collect.pickup_reminder",
+    "name": "Click & Collect pickup reminder",
+    "eventName": "fb.click_collect.pickup_reminder",
     "active": 1,
     "priority": 1,
     "createdAt": null,
-    "description": "Provisioned by Foerde Click & Collect plugin",
+    "description": "Provisioned by Click & Collect plugin",
     "customFields": null
   },
   "sequences": [

@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\EventSubscriber;
+namespace FbClickCollect\EventSubscriber;
 
-use FoerdeClickCollect\ScheduledTask\SendRemindersTask;
+use FbClickCollect\ScheduledTask\SendRemindersTask;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -35,7 +35,7 @@ class SystemConfigSubscriber implements EventSubscriberInterface
         }
 
         foreach ($keys as $key) {
-            if ($key === 'FoerdeClickCollect.config.reminderRunTime' || $key === 'core.basicInformation.timezone') {
+            if ($key === 'FbClickCollect.config.reminderRunTime' || $key === 'core.basicInformation.timezone') {
                 $this->alignNextExecution();
                 return;
             }
@@ -54,7 +54,7 @@ class SystemConfigSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $timeStr = (string) ($this->systemConfig->get('FoerdeClickCollect.config.reminderRunTime') ?? '06:00');
+        $timeStr = (string) ($this->systemConfig->get('FbClickCollect.config.reminderRunTime') ?? '06:00');
         if (!preg_match('/^(\d{1,2}):(\d{2})$/', $timeStr, $m)) {
             $m = [null, '06', '00'];
         }

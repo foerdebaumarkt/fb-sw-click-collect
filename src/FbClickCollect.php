@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect;
+namespace FbClickCollect;
 
-use FoerdeClickCollect\Event\PickupReminderEvent;
+use FbClickCollect\Event\PickupReminderEvent;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
@@ -15,7 +15,7 @@ use Shopware\Core\Framework\Plugin\Context\UpdateContext;
 use Shopware\Core\Framework\Plugin\Context\UninstallContext;
 use Shopware\Core\Framework\Uuid\Uuid;
 
-class FoerdeClickCollect extends Plugin
+class FbClickCollect extends Plugin
 {
     private const TECHNICAL_NAME = 'click_collect';
     private const DISPLAY_NAME = 'Click & Collect';
@@ -198,7 +198,7 @@ TEXT;
 
     public function getMigrationNamespace(): string
     {
-        return 'FoerdeClickCollect\\Migration';
+        return 'FbClickCollect\\Migration';
     }
 
     private function provision(Context $context): void
@@ -219,7 +219,7 @@ TEXT;
 
         // Migrate from old technical name if present
         $shippingId = $this->getShippingMethodIdByTechnicalName($shippingRepo, $context, self::TECHNICAL_NAME)
-            ?? $this->getShippingMethodIdByTechnicalName($shippingRepo, $context, 'foerde_click_collect')
+            ?? $this->getShippingMethodIdByTechnicalName($shippingRepo, $context, 'fb_click_collect')
             ?? Uuid::randomHex();
         $deliveryTimeId = $this->ensureDeliveryTime($deliveryTimeRepo, $context);
 
@@ -264,7 +264,7 @@ TEXT;
             $shippingRepo->upsert([$payload], $context);
         } catch (\Throwable $e) {
             // Surface errors in the PHP error log for quick debugging
-            error_log('[FoerdeClickCollect] Upsert shipping method failed: ' . $e->getMessage());
+            error_log('[FbClickCollect] Upsert shipping method failed: ' . $e->getMessage());
             throw $e;
         }
 
@@ -285,13 +285,13 @@ TEXT;
                 $salesChannelRepo->upsert($updates, $context);
             }
         } catch (\Throwable $e) {
-            error_log('[FoerdeClickCollect] Linking to sales channels failed: ' . $e->getMessage());
+            error_log('[FbClickCollect] Linking to sales channels failed: ' . $e->getMessage());
             // Non-fatal: shipping method exists regardless
         }
 
         // Provision payment method: technical_name 'click_collect'
         $paymentId = $this->getPaymentMethodIdByTechnicalName($paymentRepo, $context, self::TECHNICAL_NAME)
-            ?? $this->getPaymentMethodIdByTechnicalName($paymentRepo, $context, 'foerde_click_collect')
+            ?? $this->getPaymentMethodIdByTechnicalName($paymentRepo, $context, 'fb_click_collect')
             ?? Uuid::randomHex();
 
         // Ensure availability rule limited to the pickup shipping method
@@ -321,11 +321,11 @@ TEXT;
         try {
             $ruleRepo->upsert([$rulePayload], $context);
         } catch (\Throwable $e) {
-            error_log('[FoerdeClickCollect] Upsert availability rule failed: ' . $e->getMessage());
+            error_log('[FbClickCollect] Upsert availability rule failed: ' . $e->getMessage());
             throw $e;
         }
 
-        $handlerClass = \FoerdeClickCollect\Service\Payment\ClickCollectPaymentHandler::class;
+        $handlerClass = \FbClickCollect\Service\Payment\ClickCollectPaymentHandler::class;
         $paymentPayload = [
             'id' => $paymentId,
             'technicalName' => self::TECHNICAL_NAME,
@@ -351,7 +351,7 @@ TEXT;
         try {
             $paymentRepo->upsert([$paymentPayload], $context);
         } catch (\Throwable $e) {
-            error_log('[FoerdeClickCollect] Upsert payment method failed: ' . $e->getMessage());
+            error_log('[FbClickCollect] Upsert payment method failed: ' . $e->getMessage());
             throw $e;
         }
 
@@ -372,7 +372,7 @@ TEXT;
                 $salesChannelRepo->upsert($updates, $context);
             }
         } catch (\Throwable $e) {
-            error_log('[FoerdeClickCollect] Linking payment to sales channels failed: ' . $e->getMessage());
+            error_log('[FbClickCollect] Linking payment to sales channels failed: ' . $e->getMessage());
         }
     }
 
@@ -503,7 +503,7 @@ TEXT;
             $systemConfig = $this->container->get(\Shopware\Core\System\SystemConfig\SystemConfigService::class);
 
             $criteria = (new Criteria())
-                ->addFilter(new EqualsFilter('name', \FoerdeClickCollect\ScheduledTask\SendRemindersTask::getTaskName()))
+                ->addFilter(new EqualsFilter('name', \FbClickCollect\ScheduledTask\SendRemindersTask::getTaskName()))
                 ->setLimit(1);
             $ctx = Context::createDefaultContext();
             $task = $taskRepo->search($criteria, $ctx)->first();
@@ -511,7 +511,7 @@ TEXT;
                 return;
             }
 
-            $timeStr = (string) ($systemConfig->get('FoerdeClickCollect.config.reminderRunTime') ?? '06:00');
+            $timeStr = (string) ($systemConfig->get('FbClickCollect.config.reminderRunTime') ?? '06:00');
             if (!preg_match('/^(\d{1,2}):(\d{2})$/', $timeStr, $m)) {
                 $m = [null, '06', '00'];
             }
@@ -540,7 +540,7 @@ TEXT;
             ]], $ctx);
         } catch (\Throwable $e) {
             // non-fatal: scheduling will still run daily, just not aligned to time-of-day until first execution
-            error_log('[FoerdeClickCollect] Failed to align reminders task next run: ' . $e->getMessage());
+            error_log('[FbClickCollect] Failed to align reminders task next run: ' . $e->getMessage());
         }
     }
 }

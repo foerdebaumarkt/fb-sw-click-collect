@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SHOPWARE_LOCAL_DIR="${SHOPWARE_LOCAL_DIR:-${ROOT_DIR}/../shopware-local}"
-PLUGIN_NAME="FoerdeClickCollect"
+PLUGIN_NAME="FbClickCollect"
 PLUGIN_SOURCE="${ROOT_DIR}"
 PLUGIN_DEST_CONTAINER="/var/www/html/custom/plugins/${PLUGIN_NAME}"
 
@@ -44,7 +44,7 @@ fi
 echo "[install-plugin] Synchronized plugin sources to container path ${PLUGIN_DEST_CONTAINER}" >&2
 
 # Install/activate and rebuild assets
-run_compose_exec shop bash -lc 'set -e; bin/console plugin:refresh; if ! bin/console plugin:install -a FoerdeClickCollect; then bin/console plugin:activate FoerdeClickCollect; fi; bin/console assets:install --force && bin/console bundle:dump && bin/console cache:clear && bin/console theme:refresh && bin/console theme:compile'
+run_compose_exec shop bash -lc 'set -e; bin/console plugin:refresh; if ! bin/console plugin:install -a FbClickCollect; then bin/console plugin:activate FbClickCollect; fi; bin/console assets:install --force && bin/console bundle:dump && bin/console cache:clear && bin/console theme:refresh && bin/console theme:compile'
 
 # Optional: build admin extensions if make targets exist
 if (cd "${SHOPWARE_LOCAL_DIR}" && make -n admin-build-extensions >/dev/null 2>&1); then

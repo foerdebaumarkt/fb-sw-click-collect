@@ -1,12 +1,12 @@
 {
   "flow": {
     "id": "cad8d95db611406a96332835a2affb3c",
-    "name": "Foerde Click & Collect order confirmation",
+    "name": "Click & Collect order confirmation",
     "eventName": "checkout.order.placed",
     "active": 1,
     "priority": 1,
     "createdAt": null,
-    "description": "Provisioned by Foerde Click & Collect plugin",
+    "description": "Provisioned by Click & Collect plugin",
     "customFields": null
   },
   "sequences": [

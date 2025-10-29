@@ -1,7 +1,7 @@
 {
     "sw-flow-custom-event": {
         "flow-list": {
-            "foerde_click_collect_pickup_reminder": "Click & Collect pickup reminder",
+            "fb_click_collect_pickup_reminder": "Click & Collect pickup reminder",
             "state_enter_order_delivery_state_ready": "Order delivery set to ready for pickup"
         }
     }

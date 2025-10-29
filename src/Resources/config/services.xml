@@ -6,45 +6,45 @@
         <defaults autowire="true" autoconfigure="true" public="false"/>
 
         <!-- Shared pickup configuration helpers -->
-        <service id="FoerdeClickCollect\Service\PickupConfigResolver" />
+        <service id="FbClickCollect\Service\PickupConfigResolver" />
         <!-- Core reminder service -->
-            <service id="FoerdeClickCollect\Service\ReminderService">
+            <service id="FbClickCollect\Service\ReminderService">
                 <argument type="service" id="Doctrine\DBAL\Connection"/>
                 <argument type="service" id="order.repository"/>
                 <argument type="service" id="Shopware\Core\Content\Flow\Dispatching\FlowDispatcher"/>
         </service>
         <!-- Payment handler for Click & Collect (offline, synchronous) -->
-        <service id="FoerdeClickCollect\Service\Payment\ClickCollectPaymentHandler">
+        <service id="FbClickCollect\Service\Payment\ClickCollectPaymentHandler">
             <tag name="shopware.payment.method"/>
         </service>
         <!-- Staff notification on order placed for Click & Collect -->
-        <service id="FoerdeClickCollect\EventSubscriber\OrderPlacedSubscriber">
+        <service id="FbClickCollect\EventSubscriber\OrderPlacedSubscriber">
             <tag name="kernel.event_subscriber"/>
             <argument type="service" id="order.repository"/>
             <argument type="service" id="order_delivery.repository"/>
         </service>
-        <service id="FoerdeClickCollect\EventSubscriber\OrderConfirmationMailSubscriber">
+        <service id="FbClickCollect\EventSubscriber\OrderConfirmationMailSubscriber">
             <tag name="kernel.event_subscriber"/>
         </service>
         <!-- Console command to send pickup reminders -->
-        <service id="FoerdeClickCollect\Command\SendRemindersCommand">
+        <service id="FbClickCollect\Command\SendRemindersCommand">
             <tag name="console.command" command="fb:click-collect:send-reminders"/>
         </service>
 
         <!-- Scheduled task handler to send reminders daily -->
-        <service id="FoerdeClickCollect\ScheduledTask\SendRemindersTaskHandler">
+        <service id="FbClickCollect\ScheduledTask\SendRemindersTaskHandler">
             <argument type="service" id="scheduled_task.repository"/>
             <tag name="shopware.scheduled.task.handler"/>
         </service>
 
         <!-- Align schedule when config/timezone changes -->
-        <service id="FoerdeClickCollect\EventSubscriber\SystemConfigSubscriber">
+        <service id="FbClickCollect\EventSubscriber\SystemConfigSubscriber">
             <tag name="kernel.event_subscriber"/>
             <argument type="service" id="scheduled_task.repository"/>
         </service>
 
         <!-- Test-only controller to trigger reminders via Admin API in dev/test -->
-        <service id="FoerdeClickCollect\Controller\TestActionController">
+        <service id="FbClickCollect\Controller\TestActionController">
             <argument>%kernel.environment%</argument>
         </service>
     </services>

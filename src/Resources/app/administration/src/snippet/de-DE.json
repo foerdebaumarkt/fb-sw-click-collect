@@ -1,7 +1,7 @@
 {
     "sw-flow-custom-event": {
         "flow-list": {
-            "foerde_click_collect_pickup_reminder": "Click & Collect Abhol-Erinnerung",
+            "fb_click_collect_pickup_reminder": "Click & Collect Abhol-Erinnerung",
             "state_enter_order_delivery_state_ready": "Bestelllieferung auf \"Abholbereit\" gesetzt"
         }
     }

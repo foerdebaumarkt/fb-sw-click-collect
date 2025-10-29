@@ -1,5 +1,5 @@
 {
-  "name": "@foerdebaumarkt/fb-sw-click-collect",
+  "name": "@fb/click-collect",
   "private": true,
   "type": "module",
   "scripts": {

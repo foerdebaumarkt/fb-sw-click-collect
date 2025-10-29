@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\ScheduledTask;
+namespace FbClickCollect\ScheduledTask;
 
-use FoerdeClickCollect\Service\ReminderService;
+use FbClickCollect\Service\ReminderService;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -45,7 +45,7 @@ class SendRemindersTaskHandler extends ScheduledTaskHandler
             return;
         }
 
-        $timeStr = (string) ($this->systemConfig->get('FoerdeClickCollect.config.reminderRunTime') ?? '06:00');
+        $timeStr = (string) ($this->systemConfig->get('FbClickCollect.config.reminderRunTime') ?? '06:00');
         if (!preg_match('/^(\d{1,2}):(\d{2})$/', $timeStr, $m)) {
             $timeStr = '06:00';
             $m = [null, '06', '00'];

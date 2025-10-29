@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace FoerdeClickCollect\Migration;
+namespace FbClickCollect\Migration;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
@@ -65,10 +65,10 @@ class Migration1761264002ReminderMailTemplate extends MigrationStep
 {% set pickupDelivery = order.deliveries|first %}
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
 {% set config = {
-    'storeName': pickupFields.foerde_click_collect_store_name|default(config.storeName|default('')),
-    'storeAddress': pickupFields.foerde_click_collect_store_address|default(config.storeAddress|default('')),
-    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(config.openingHours|default('')),
-    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+    'storeName': pickupFields.fb_click_collect_store_name|default(config.storeName|default('')),
+    'storeAddress': pickupFields.fb_click_collect_store_address|default(config.storeAddress|default('')),
+    'openingHours': pickupFields.fb_click_collect_opening_hours|default(config.openingHours|default('')),
+    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
 } %}
 <p>Hallo {{ customer.firstName|default('') }} {{ customer.lastName|default('') }},</p>
 <p>Ihre Click & Collect Bestellung <strong>#{{ orderNumber }}</strong> ist abholbereit.</p>
@@ -82,10 +82,10 @@ HTML,
 {% set pickupDelivery = order.deliveries|first %}
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
 {% set config = {
-    'storeName': pickupFields.foerde_click_collect_store_name|default(config.storeName|default('')),
-    'storeAddress': pickupFields.foerde_click_collect_store_address|default(config.storeAddress|default('')),
-    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(config.openingHours|default('')),
-    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+    'storeName': pickupFields.fb_click_collect_store_name|default(config.storeName|default('')),
+    'storeAddress': pickupFields.fb_click_collect_store_address|default(config.storeAddress|default('')),
+    'openingHours': pickupFields.fb_click_collect_opening_hours|default(config.openingHours|default('')),
+    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
 } %}
 Hallo {{ customer.firstName|default('') }} {{ customer.lastName|default('') }}
 
@@ -115,10 +115,10 @@ PLAIN
 {% set pickupDelivery = order.deliveries|first %}
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
 {% set config = {
-    'storeName': pickupFields.foerde_click_collect_store_name|default(config.storeName|default('')),
-    'storeAddress': pickupFields.foerde_click_collect_store_address|default(config.storeAddress|default('')),
-    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(config.openingHours|default('')),
-    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+    'storeName': pickupFields.fb_click_collect_store_name|default(config.storeName|default('')),
+    'storeAddress': pickupFields.fb_click_collect_store_address|default(config.storeAddress|default('')),
+    'openingHours': pickupFields.fb_click_collect_opening_hours|default(config.openingHours|default('')),
+    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
 } %}
 <p>Hello {{ customer.firstName|default('') }} {{ customer.lastName|default('') }},</p>
 <p>Your Click & Collect order <strong>#{{ orderNumber }}</strong> is ready for pickup.</p>
@@ -132,10 +132,10 @@ HTML,
 {% set pickupDelivery = order.deliveries|first %}
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
 {% set config = {
-    'storeName': pickupFields.foerde_click_collect_store_name|default(config.storeName|default('')),
-    'storeAddress': pickupFields.foerde_click_collect_store_address|default(config.storeAddress|default('')),
-    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(config.openingHours|default('')),
-    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+    'storeName': pickupFields.fb_click_collect_store_name|default(config.storeName|default('')),
+    'storeAddress': pickupFields.fb_click_collect_store_address|default(config.storeAddress|default('')),
+    'openingHours': pickupFields.fb_click_collect_opening_hours|default(config.openingHours|default('')),
+    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
 } %}
 Hello {{ customer.firstName|default('') }} {{ customer.lastName|default('') }}
 
