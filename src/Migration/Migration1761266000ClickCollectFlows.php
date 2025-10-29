@@ -111,40 +111,30 @@ class Migration1761266000ClickCollectFlows extends MigrationStep
         $storeEmail = $this->getConfigString($connection, 'FbClickCollect.config.storeEmail');
         $storeName = $this->getConfigString($connection, 'FbClickCollect.config.storeName');
 
-        $staffRecipientEmailExpression = '{{ (order.deliveries|first ? ((order.deliveries|first).customFields.fb_click_collect_store_email|default(null)) : null)
-            ?: config("FbClickCollect.config.storeEmail", salesChannel.id)
-            ?: config("FbClickCollect.config.storeEmail")
-            ?: config("core.basicInformation.email", salesChannel.id)
-            ?: config("core.basicInformation.email")
-            ?: config("core.mailerSettings.senderAddress", salesChannel.id)
-            ?: config("core.mailerSettings.senderAddress") }}';
+        // Require explicit plugin config values; do not fall back to Twig expressions or core defaults.
+        $staffRecipientEmail = is_string($storeEmail) && strpos($storeEmail, '@') !== false ? trim($storeEmail) : '';
+        $staffRecipientName = is_string($storeName) && $storeName !== '' ? trim($storeName) : '';
 
-        $staffRecipientNameExpression = '{{ (order.deliveries|first ? ((order.deliveries|first).customFields.fb_click_collect_store_name|default(null)) : null)
-            ?? config("FbClickCollect.config.storeName", salesChannel.id)
-            ?? config("core.basicInformation.company", salesChannel.id)
-            ?? (salesChannel.translated.name ?? "Shop Team") }}';
-
-        $staffRecipientEmail = $storeEmail !== null && $storeEmail !== '' ? $storeEmail : $staffRecipientEmailExpression;
-        $staffRecipientName = $storeName !== null && $storeName !== '' ? $storeName : $staffRecipientNameExpression;
-
-        $this->insertSequence($connection, [
-            'id' => $staffSequenceId,
-            'flow_id' => $flowId,
-            'parent_id' => $rootId,
-            'rule_id' => null,
-            'action_name' => 'action.mail.send',
-            'position' => 2,
-            'true_case' => 1,
-            'display_group' => 1,
-            'config' => $this->buildMailConfigJson(
-                $staffTemplate,
-                'custom',
-                [
-                    $staffRecipientEmail => $staffRecipientName,
-                ]
-            ),
-            'created_at' => $now,
-        ]);
+        if ($staffRecipientEmail !== '' && $staffRecipientName !== '') {
+            $this->insertSequence($connection, [
+                'id' => $staffSequenceId,
+                'flow_id' => $flowId,
+                'parent_id' => $rootId,
+                'rule_id' => null,
+                'action_name' => 'action.mail.send',
+                'position' => 2,
+                'true_case' => 1,
+                'display_group' => 1,
+                'config' => $this->buildMailConfigJson(
+                    $staffTemplate,
+                    'custom',
+                    [
+                        $staffRecipientEmail => $staffRecipientName,
+                    ]
+                ),
+                'created_at' => $now,
+            ]);
+        }
 
         $this->insertSequence($connection, [
             'id' => $fallbackSequenceId,
