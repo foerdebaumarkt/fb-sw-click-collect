@@ -74,6 +74,16 @@ jobs:
           echo "EXTENSION_VERSION=${version}" >> "$GITHUB_ENV"
           echo "extension_version=${version}" >> "$GITHUB_OUTPUT"
 
+      - name: Ensure tag matches extension version
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="${{ steps.version.outputs.extension_version }}"
+          if [ "${tag}" != "${version}" ] && [ "${tag}" != "v${version}" ]; then
+            echo "Tag ${tag} must match extension version ${version} (optionally prefixed with 'v')." >&2
+            exit 1
+          fi
+
       - name: Build versioned zip
         run: shopware-cli extension zip . --git-commit "${{ github.sha }}" --release --filename "${PLUGIN_NAME}-${EXTENSION_VERSION}.zip"
 
