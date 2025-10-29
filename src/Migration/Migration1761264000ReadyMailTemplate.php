@@ -53,90 +53,140 @@ class Migration1761264000ReadyMailTemplate extends MigrationStep
         }
 
         // Upsert DE/EN translations
-        $this->upsertTemplateTranslation($connection, $templateId, 'de-DE',
-            'Ihre Bestellung #{{ orderNumber }} ist abholbereit',
-            <<<HTML
+    $this->upsertTemplateTranslation($connection, $templateId, 'de-DE',
+        'Ihre Bestellung #{{ orderNumber|default(order is defined ? order.orderNumber|default(\'\') : \'\') }} ist abholbereit',
+        <<<HTML
+{% set orderEntity = order is defined ? order : null %}
+{% set orderNumberResolved = orderNumber|default(orderEntity ? orderEntity.orderNumber|default('') : '') %}
+{% set customer = customer|default(orderEntity ? orderEntity.orderCustomer|default({}) : {}) %}
+{% set pickupDelivery = orderEntity ? orderEntity.deliveries|first : null %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = (pickup is defined and pickup is iterable) ? pickup : config|default({}) %}
+{% set pickup = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
 <p>Hallo {{ customer.firstName|default('') }} {{ customer.lastName|default('') }},</p>
-<p>Ihre Click & Collect Bestellung <strong>#{{ orderNumber }}</strong> ist abholbereit und liegt für Sie im Markt bereit.</p>
-<p><strong>Abholung</strong><br/>{{ config.storeName|default('Ihr Markt') }}<br/>{{ config.storeAddress|nl2br }}{% if config.openingHours is defined and config.openingHours %}<br/><em>Öffnungszeiten:</em><br/>{{ config.openingHours|nl2br }}{% endif %}</p>
+<p>Ihre Click & Collect Bestellung <strong>#{{ orderNumberResolved }}</strong> ist abholbereit und liegt für Sie im Markt bereit.</p>
+<p><strong>Abholung</strong><br/>{{ pickup.storeName|default('Ihr Markt') }}{% if pickup.storeAddress|default('') %}<br/>{{ pickup.storeAddress|nl2br }}{% endif %}{% if pickup.openingHours|default('') %}<br/><em>Öffnungszeiten:</em><br/>{{ pickup.openingHours|nl2br }}{% endif %}</p>
 <p><strong>Bitte mitbringen</strong></p>
 <ul>
-  <li>Bestellnummer <strong>#{{ orderNumber }}</strong></li>
-  <li>Diese E‑Mail (optional)</li>
-  <li>Zur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.</li>
-  <li>Bitte holen Sie die Ware innerhalb von <strong>{{ config.pickupWindowDays|default(2) }}</strong> Tagen ab.</li>
+    <li>Bestellnummer <strong>#{{ orderNumberResolved }}</strong></li>
+    <li>Diese E-Mail (optional)</li>
+    <li>Zur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.</li>
+    <li>Bitte holen Sie die Ware innerhalb von <strong>{{ pickup.pickupWindowDays|default(2) }}</strong> Tagen ab.</li>
 </ul>
 <p>Vielen Dank und bis bald!<br/>Ihr Förde Baumarkt Team</p>
 HTML,
-            <<<PLAIN
+        <<<PLAIN
+{% set orderEntity = order is defined ? order : null %}
+{% set orderNumberResolved = orderNumber|default(orderEntity ? orderEntity.orderNumber|default('') : '') %}
+{% set customer = customer|default(orderEntity ? orderEntity.orderCustomer|default({}) : {}) %}
+{% set pickupDelivery = orderEntity ? orderEntity.deliveries|first : null %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = (pickup is defined and pickup is iterable) ? pickup : config|default({}) %}
+{% set pickup = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
 Hallo {{ customer.firstName|default('') }} {{ customer.lastName|default('') }}
 
-Ihre Click & Collect Bestellung #{{ orderNumber }} ist abholbereit und liegt für Sie im Markt bereit.
+Ihre Click & Collect Bestellung #{{ orderNumberResolved }} ist abholbereit und liegt für Sie im Markt bereit.
 
 Abholung:
-{{ config.storeName|default('Ihr Markt') }}
-{{ config.storeAddress }}
-{% if config.openingHours is defined and config.openingHours %}
-Öffnungszeiten:
-{{ config.openingHours }}
+{{ pickup.storeName|default('Ihr Markt') }}
+{% if pickup.storeAddress|default('') %}{{ pickup.storeAddress }}
+{% endif %}{% if pickup.openingHours|default('') %}Öffnungszeiten:
+{{ pickup.openingHours }}
 {% endif %}
 
 Bitte mitbringen:
-- Bestellnummer #{{ orderNumber }}
-- Diese E‑Mail (optional)
+- Bestellnummer #{{ orderNumberResolved }}
+- Diese E-Mail (optional)
 
 Hinweis:
 Zur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.
 
 Abholhinweise:
-Bitte holen Sie die Ware innerhalb von {{ config.pickupWindowDays|default(2) }} Tagen ab.
+Bitte holen Sie die Ware innerhalb von {{ pickup.pickupWindowDays|default(2) }} Tagen ab.
 
 Vielen Dank und bis bald!
 Ihr Förde Baumarkt Team
 PLAIN
-        );
+    );
 
-        $this->upsertTemplateTranslation($connection, $templateId, 'en-GB',
-            'Your order #{{ orderNumber }} is ready for pickup',
-            <<<HTML
+    $this->upsertTemplateTranslation($connection, $templateId, 'en-GB',
+    'Your order #{{ orderNumber|default(order is defined ? order.orderNumber|default(\'\') : \'\') }} is ready for pickup',
+    <<<HTML
+{% set orderEntity = order is defined ? order : null %}
+{% set orderNumberResolved = orderNumber|default(orderEntity ? orderEntity.orderNumber|default('') : '') %}
+{% set customer = customer|default(orderEntity ? orderEntity.orderCustomer|default({}) : {}) %}
+{% set pickupDelivery = orderEntity ? orderEntity.deliveries|first : null %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = (pickup is defined and pickup is iterable) ? pickup : config|default({}) %}
+{% set pickup = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
 <p>Hello {{ customer.firstName|default('') }} {{ customer.lastName|default('') }},</p>
-<p>Your Click & Collect order <strong>#{{ orderNumber }}</strong> is ready for pickup at our store.</p>
-<p><strong>Pickup</strong><br/>{{ config.storeName|default('Your store') }}<br/>{{ config.storeAddress|nl2br }}{% if config.openingHours is defined and config.openingHours %}<br/><em>Opening hours:</em><br/>{{ config.openingHours|nl2br }}{% endif %}</p>
+<p>Your Click & Collect order <strong>#{{ orderNumberResolved }}</strong> is ready for pickup at our store.</p>
+<p><strong>Pickup</strong><br/>{{ pickup.storeName|default('Your store') }}{% if pickup.storeAddress|default('') %}<br/>{{ pickup.storeAddress|nl2br }}{% endif %}{% if pickup.openingHours|default('') %}<br/><em>Opening hours:</em><br/>{{ pickup.openingHours|nl2br }}{% endif %}</p>
 <p><strong>Bring</strong></p>
 <ul>
-  <li>Order number <strong>#{{ orderNumber }}</strong></li>
-  <li>This email (optional)</li>
-  <li>Stating your name is sufficient; payment happens in store.</li>
-  <li>Please collect within <strong>{{ config.pickupWindowDays|default(2) }}</strong> days.</li>
+    <li>Order number <strong>#{{ orderNumberResolved }}</strong></li>
+    <li>This email (optional)</li>
+    <li>Stating your name is sufficient; payment happens in store.</li>
+    <li>Please collect within <strong>{{ pickup.pickupWindowDays|default(2) }}</strong> days.</li>
 </ul>
 <p>Thank you and see you soon!<br/>Your Foerde Baumarkt team</p>
 HTML,
-            <<<PLAIN
+        <<<PLAIN
+{% set orderEntity = order is defined ? order : null %}
+{% set orderNumberResolved = orderNumber|default(orderEntity ? orderEntity.orderNumber|default('') : '') %}
+{% set customer = customer|default(orderEntity ? orderEntity.orderCustomer|default({}) : {}) %}
+{% set pickupDelivery = orderEntity ? orderEntity.deliveries|first : null %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = (pickup is defined and pickup is iterable) ? pickup : config|default({}) %}
+{% set pickup = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
 Hello {{ customer.firstName|default('') }} {{ customer.lastName|default('') }}
 
-Your Click & Collect order #{{ orderNumber }} is ready for pickup at our store.
+Your Click & Collect order #{{ orderNumberResolved }} is ready for pickup at our store.
 
 Pickup:
-{{ config.storeName|default('Your store') }}
-{{ config.storeAddress }}
-{% if config.openingHours is defined and config.openingHours %}
-Opening hours:
-{{ config.openingHours }}
+{{ pickup.storeName|default('Your store') }}
+{% if pickup.storeAddress|default('') %}{{ pickup.storeAddress }}
+{% endif %}{% if pickup.openingHours|default('') %}Opening hours:
+{{ pickup.openingHours }}
 {% endif %}
 
 Bring:
-- Order number #{{ orderNumber }}
+- Order number #{{ orderNumberResolved }}
 - This email (optional)
 
 Note:
 Stating your name is sufficient; payment happens in store.
 
-Please collect within {{ config.pickupWindowDays|default(2) }} days.
+Please collect within {{ pickup.pickupWindowDays|default(2) }} days.
 
 Thank you and see you soon!
 Your Foerde Baumarkt team
 PLAIN
-        );
+    );
     }
 
     public function updateDestructive(Connection $connection): void

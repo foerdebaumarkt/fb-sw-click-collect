@@ -1,0 +1,100 @@
+name: Deploy Plugin Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag name (e.g. v1.2.3)'
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine plugin metadata
+        run: |
+          set -euo pipefail
+          plugin_name=$(jq -r '.extra["shopware-plugin-class"] // empty' composer.json)
+          if [ -n "${plugin_name}" ]; then
+            plugin_name=${plugin_name##*\\}
+          else
+            plugin_name=$(jq -r '.name // empty' composer.json)
+            plugin_name=${plugin_name##*/}
+          fi
+          plugin_name=${plugin_name%%.php}
+          sanitized=$(printf '%s' "${plugin_name}" | tr -cd '[:alnum:]_-')
+          if [ -z "${sanitized}" ]; then
+            echo "Unable to determine plugin name from composer.json" >&2
+            exit 1
+          fi
+          echo "PLUGIN_NAME=${sanitized}" >> "${GITHUB_ENV}"
+
+      - name: Download release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifact
+          gh release download "${TAG}" --pattern "${PLUGIN_NAME}-*.zip" --dir artifact
+          archive=$(find artifact -maxdepth 1 -type f -name "${PLUGIN_NAME}-*.zip" | head -n 1)
+          if [ -z "${archive}" ]; then
+            echo "No release asset matching ${PLUGIN_NAME}-*.zip found on tag ${TAG}" >&2
+            ls -R artifact >&2 || true
+            exit 1
+          fi
+          mv "${archive}" "${PLUGIN_NAME}.zip"
+          echo "PLUGIN_ARCHIVE=${PLUGIN_NAME}.zip" >> "${GITHUB_ENV}"
+
+      - name: Deploy plugin via shopware-cli container
+        uses: docker://shopware/shopware-cli:latest
+        env:
+          SHOPWARE_URL: ${{ secrets.SHOPWARE_URL }}
+          SHOPWARE_ACCESS_KEY_ID: ${{ secrets.SHOPWARE_ACCESS_KEY_ID }}
+          SHOPWARE_SECRET_ACCESS_KEY: ${{ secrets.SHOPWARE_SECRET_ACCESS_KEY }}
+          PLUGIN_NAME: ${{ env.PLUGIN_NAME }}
+          PLUGIN_ARCHIVE: ${{ env.PLUGIN_ARCHIVE }}
+        with:
+          entrypoint: /bin/sh
+          args: |-
+            -c "set -e
+            if [ -z \"${SHOPWARE_URL}\" ]; then
+              echo \"Missing required secret: SHOPWARE_URL\" >&2
+              exit 1
+            fi
+            if [ -z \"${SHOPWARE_ACCESS_KEY_ID}\" ]; then
+              echo \"Missing required secret: SHOPWARE_ACCESS_KEY_ID\" >&2
+              exit 1
+            fi
+            if [ -z \"${SHOPWARE_SECRET_ACCESS_KEY}\" ]; then
+              echo \"Missing required secret: SHOPWARE_SECRET_ACCESS_KEY\" >&2
+              exit 1
+            fi
+            shopware-cli project logout production >/dev/null 2>&1 || true
+            shopware-cli project login --alias production --url \"$SHOPWARE_URL\" --client-id \"$SHOPWARE_ACCESS_KEY_ID\" --client-secret \"$SHOPWARE_SECRET_ACCESS_KEY\"
+            shopware-cli project use production
+            shopware-cli project extension upload \"$PLUGIN_ARCHIVE\"
+            shopware-cli project console plugin:refresh
+            if ! shopware-cli project extension install \"$PLUGIN_NAME\" --activate; then
+              shopware-cli project extension update \"$PLUGIN_NAME\"
+              shopware-cli project extension activate \"$PLUGIN_NAME\"
+            fi
+            shopware-cli project console assets:install --force
+            shopware-cli project console bundle:dump
+            shopware-cli project console cache:clear
+            shopware-cli project console theme:refresh
+            shopware-cli project console theme:compile
+            shopware-cli project logout production >/dev/null 2>&1 || true
+            "
+
+      - name: Cleanup workspace
+        if: always()
+        run: |
+          rm -f "${PLUGIN_ARCHIVE:-}" || true
+          rm -rf artifact || true

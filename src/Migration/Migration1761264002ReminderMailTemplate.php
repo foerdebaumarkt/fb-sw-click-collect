@@ -61,6 +61,15 @@ class Migration1761264002ReminderMailTemplate extends MigrationStep
         $this->upsertTemplateTranslation($connection, $templateId, 'de-DE',
             'Erinnerung: Bitte holen Sie Ihre Bestellung #{{ orderNumber }} ab',
             <<<'HTML'
+{% set customer = customer|default(order.orderCustomer) %}
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set config = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(config.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(config.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(config.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+} %}
 <p>Hallo {{ customer.firstName|default('') }} {{ customer.lastName|default('') }},</p>
 <p>Ihre Click & Collect Bestellung <strong>#{{ orderNumber }}</strong> ist abholbereit.</p>
 <p>Bitte holen Sie Ihre Bestellung innerhalb von <strong>{{ config.pickupWindowDays|default(2) }}</strong> Tagen ab.</p>
@@ -69,6 +78,15 @@ class Migration1761264002ReminderMailTemplate extends MigrationStep
 <p>Vielen Dank!<br/>Ihr Förde Baumarkt Team</p>
 HTML,
             <<<'PLAIN'
+{% set customer = customer|default(order.orderCustomer) %}
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set config = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(config.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(config.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(config.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+} %}
 Hallo {{ customer.firstName|default('') }} {{ customer.lastName|default('') }}
 
 Ihre Click & Collect Bestellung #{{ orderNumber }} ist abholbereit.
@@ -93,6 +111,15 @@ PLAIN
         $this->upsertTemplateTranslation($connection, $templateId, 'en-GB',
             'Reminder: Please pick up your order #{{ orderNumber }}',
             <<<'HTML'
+{% set customer = customer|default(order.orderCustomer) %}
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set config = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(config.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(config.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(config.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+} %}
 <p>Hello {{ customer.firstName|default('') }} {{ customer.lastName|default('') }},</p>
 <p>Your Click & Collect order <strong>#{{ orderNumber }}</strong> is ready for pickup.</p>
 <p>Please collect your order within <strong>{{ config.pickupWindowDays|default(2) }}</strong> days.</p>
@@ -101,6 +128,15 @@ PLAIN
 <p>Thank you!<br/>Your Foerde Baumarkt team</p>
 HTML,
             <<<'PLAIN'
+{% set customer = customer|default(order.orderCustomer) %}
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set config = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(config.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(config.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(config.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+} %}
 Hello {{ customer.firstName|default('') }} {{ customer.lastName|default('') }}
 
 Your Click & Collect order #{{ orderNumber }} is ready for pickup.

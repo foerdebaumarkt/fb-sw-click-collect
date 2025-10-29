@@ -1,0 +1,31 @@
+{
+  "flow": {
+    "id": "4503d09c5ef34a95a44cfbf7ad41ac10",
+    "name": "Foerde Click & Collect ready for pickup",
+  "eventName": "state_enter.order_delivery.state.ready",
+    "active": 1,
+    "priority": 1,
+    "createdAt": null,
+    "description": "Provisioned by Foerde Click & Collect plugin",
+    "customFields": null
+  },
+  "sequences": [
+    {
+      "id": "68c85640a8ae463ab5d258a576f3030b",
+      "parentId": null,
+      "ruleId": null,
+      "actionName": "action.mail.send",
+      "position": 1,
+      "trueCase": 0,
+      "displayGroup": 1,
+      "config": {
+        "recipient": {
+          "type": "default",
+          "data": []
+        },
+        "mailTemplateId": "019a2a2ff94b70db8f80c5fe1df6c700",
+        "mailTemplateTypeId": "019a2a2ff946724688cb4e41298d5351"
+      }
+    }
+  ]
+}

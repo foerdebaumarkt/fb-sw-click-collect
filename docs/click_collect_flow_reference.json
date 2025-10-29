@@ -1,0 +1,75 @@
+{
+  "flow": {
+    "id": "cad8d95db611406a96332835a2affb3c",
+    "name": "Foerde Click & Collect order confirmation",
+    "eventName": "checkout.order.placed",
+    "active": 1,
+    "priority": 1,
+    "createdAt": null,
+    "description": "Provisioned by Foerde Click & Collect plugin",
+    "customFields": null
+  },
+  "sequences": [
+    {
+      "id": "e421bc50b531417b86e5bdb3c7e5de7b",
+      "parentId": null,
+      "ruleId": "019a2a2ff8fe70c8b3b6b0040074098f",
+      "actionName": null,
+      "position": 1,
+      "trueCase": 0,
+      "displayGroup": 1,
+      "config": []
+    },
+    {
+      "id": "da781967c55c478c9ece1ce47d7c02e2",
+      "parentId": "e421bc50b531417b86e5bdb3c7e5de7b",
+      "ruleId": null,
+      "actionName": "action.mail.send",
+      "position": 1,
+      "trueCase": 1,
+      "displayGroup": 1,
+      "config": {
+        "recipient": {
+          "type": "default",
+          "data": []
+        },
+        "mailTemplateId": "019a2a2ff96571759fc83710743790cb",
+        "mailTemplateTypeId": "019a2a2ff961721bab8b21cd78330594"
+      }
+    },
+    {
+      "id": "7377b721908f4a76a56e476629f9d198",
+      "parentId": "e421bc50b531417b86e5bdb3c7e5de7b",
+      "ruleId": null,
+      "actionName": "action.mail.send",
+      "position": 2,
+      "trueCase": 1,
+      "displayGroup": 1,
+      "config": {
+        "recipient": {
+          "type": "admin",
+          "data": []
+        },
+        "mailTemplateId": "019a2a2ff8b1730390845a89b512511a",
+        "mailTemplateTypeId": "019a2a2ff849725b9320d4e3f92354fd"
+      }
+    },
+    {
+      "id": "6c339bdb4259425c883c9224a66cf2b1",
+      "parentId": "e421bc50b531417b86e5bdb3c7e5de7b",
+      "ruleId": null,
+      "actionName": "action.mail.send",
+      "position": 1,
+      "trueCase": 0,
+      "displayGroup": 1,
+      "config": {
+        "recipient": {
+          "type": "default",
+          "data": []
+        },
+        "mailTemplateId": "01994c6d488f71cdbdbd94a33b9bcdb8",
+        "mailTemplateTypeId": "01994c6dc1de704999088c13c12f0da6"
+      }
+    }
+  ]
+}

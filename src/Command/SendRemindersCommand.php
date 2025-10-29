@@ -2,10 +2,6 @@
 
 namespace FoerdeClickCollect\Command;
 
-use Doctrine\DBAL\Connection;
-use Shopware\Core\Content\Mail\Service\MailService;
-use Shopware\Core\Framework\Uuid\Uuid;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,12 +13,8 @@ class SendRemindersCommand extends Command
     protected static $defaultName = 'fb:click-collect:send-reminders';
     protected static $defaultDescription = 'Send Click & Collect pickup reminders for ready deliveries within pickup window';
 
-    public function __construct(
-        private readonly \FoerdeClickCollect\Service\ReminderService $reminderService,
-        private readonly Connection $connection,
-        private readonly MailService $mailService,
-        private readonly SystemConfigService $systemConfig,
-    ) {
+    public function __construct(private readonly \FoerdeClickCollect\Service\ReminderService $reminderService)
+    {
         parent::__construct(self::$defaultName);
     }
 

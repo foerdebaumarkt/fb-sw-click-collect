@@ -2,6 +2,7 @@
 
 namespace FoerdeClickCollect;
 
+use FoerdeClickCollect\Event\PickupReminderEvent;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
@@ -63,7 +64,6 @@ class FoerdeClickCollect extends Plugin
 <hr/>
 <p style="color:#666; font-size:12px;">Diese E-Mail wurde automatisch vom Click & Collect Plugin generiert.</p>
 HTML;
-
     private const STAFF_TEMPLATE_HTML_EN = <<<'HTML'
 <p>Hello team,</p>
 <p>A new Click & Collect order <strong>#{{ orderNumber }}</strong> has been placed and marked for in-store pickup.</p>
@@ -158,6 +158,13 @@ Store:
 
 This email was generated automatically by the Click & Collect plugin.
 TEXT;
+
+    protected function getActionEventClasses(): array
+    {
+        return array_merge(parent::getActionEventClasses(), [
+            PickupReminderEvent::class,
+        ]);
+    }
 
     public function install(InstallContext $installContext): void
     {

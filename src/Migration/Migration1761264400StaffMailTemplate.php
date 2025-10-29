@@ -77,7 +77,7 @@ class Migration1761264400StaffMailTemplate extends MigrationStep
 
         $htmlDe = <<<HTML
 <p>Hallo Team,</p>
-<p>es liegt eine neue Click &amp; Collect Bestellung <strong>#{{ orderNumber }}</strong> vor, die als Abholung im Markt markiert ist.</p>
+<p>es liegt eine neue Click &amp; Collect Bestellung <strong>#{{ order.orderNumber }}</strong> vor, die als Abholung im Markt markiert ist.</p>
 <h3>Kundendaten</h3>
 {% set customer = order.orderCustomer %}
 <p>{% if customer %}{{ customer.firstName }} {{ customer.lastName }}<br/>{{ customer.email }}{% else %}–{% endif %}</p>
@@ -106,12 +106,22 @@ class Migration1761264400StaffMailTemplate extends MigrationStep
     </tr>
   </tfoot>
 </table>
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = clickCollectPickup|default({}) %}
+{% set pickup = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
 <h3>Abholhinweise</h3>
-<p>Bitte bereitet die Bestellung innerhalb von <strong>{{ config.pickupPreparationHours }}</strong> Stunden vor. Die Abholung ist für <strong>{{ config.pickupWindowDays }}</strong> Tage möglich.</p>
+<p>Bitte bereitet die Bestellung innerhalb von <strong>{{ pickup.pickupPreparationHours|default(4) }}</strong> Stunden vor. Die Abholung ist für <strong>{{ pickup.pickupWindowDays|default(2) }}</strong> Tage möglich.</p>
 <h3>Markt</h3>
-<p>{% if config.storeName %}<strong>{{ config.storeName }}</strong><br/>{% endif %}
-{% if config.storeAddress %}{{ config.storeAddress|nl2br }}<br/>{% endif %}
-{% if config.openingHours %}<em>Öffnungszeiten:</em><br/>{{ config.openingHours|nl2br }}{% endif %}</p>
+<p>{% if pickup.storeName|default('') %}<strong>{{ pickup.storeName }}</strong><br/>{% endif %}
+{% if pickup.storeAddress|default('') %}{{ pickup.storeAddress|nl2br }}<br/>{% endif %}
+{% if pickup.openingHours|default('') %}<em>Öffnungszeiten:</em><br/>{{ pickup.openingHours|nl2br }}{% endif %}</p>
 <hr/>
 <p style="color:#666; font-size:12px;">Diese E-Mail wurde automatisch vom Click &amp; Collect Plugin generiert.</p>
 HTML;
@@ -119,7 +129,7 @@ HTML;
         $textDe = <<<TEXT
 Hallo Team,
 
-es liegt eine neue Click & Collect Bestellung #{{ orderNumber }} vor, die als Abholung im Markt markiert ist.
+es liegt eine neue Click & Collect Bestellung #{{ order.orderNumber }} vor, die als Abholung im Markt markiert ist.
 
 Kundendaten:
 {% set customer = order.orderCustomer %}{% if customer %}{{ customer.firstName }} {{ customer.lastName }} / {{ customer.email }}{% else %}–{% endif %}
@@ -129,15 +139,26 @@ Bestellpositionen:
 {% endfor %}
 Gesamtsumme: {{ order.amountTotal|number_format(2, ',', '.') }} €
 
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = clickCollectPickup|default({}) %}
+{% set pickup = {
+  'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+  'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+  'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+  'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+  'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
+
 Abholhinweise:
-- Vorbereitung: {{ config.pickupPreparationHours }} Stunden
-- Abholung möglich für: {{ config.pickupWindowDays }} Tage
+- Vorbereitung: {{ pickup.pickupPreparationHours|default(4) }} Stunden
+- Abholung möglich für: {{ pickup.pickupWindowDays|default(2) }} Tage
 
 Markt:
-{% if config.storeName %}{{ config.storeName }}
-{% endif %}{% if config.storeAddress %}{{ config.storeAddress }}
-{% endif %}{% if config.openingHours %}Öffnungszeiten:
-{{ config.openingHours }}
+{% if pickup.storeName|default('') %}{{ pickup.storeName }}
+{% endif %}{% if pickup.storeAddress|default('') %}{{ pickup.storeAddress }}
+{% endif %}{% if pickup.openingHours|default('') %}Öffnungszeiten:
+{{ pickup.openingHours }}
 {% endif %}
 
 Diese E-Mail wurde automatisch vom Click & Collect Plugin generiert.
@@ -145,7 +166,7 @@ TEXT;
 
         $htmlEn = <<<HTML
 <p>Hello team,</p>
-<p>A new Click &amp; Collect order <strong>#{{ orderNumber }}</strong> has been placed and is marked for in-store pickup.</p>
+<p>A new Click &amp; Collect order <strong>#{{ order.orderNumber }}</strong> has been placed and is marked for in-store pickup.</p>
 <h3>Customer</h3>
 {% set customer = order.orderCustomer %}
 <p>{% if customer %}{{ customer.firstName }} {{ customer.lastName }}<br/>{{ customer.email }}{% else %}–{% endif %}</p>
@@ -174,12 +195,22 @@ TEXT;
     </tr>
   </tfoot>
 </table>
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = clickCollectPickup|default({}) %}
+{% set pickup = {
+    'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+    'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+    'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+    'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+    'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
 <h3>Pickup details</h3>
-<p>Please prepare the order within <strong>{{ config.pickupPreparationHours }}</strong> hours. Pickup is available for <strong>{{ config.pickupWindowDays }}</strong> days.</p>
+<p>Please prepare the order within <strong>{{ pickup.pickupPreparationHours|default(4) }}</strong> hours. Pickup is available for <strong>{{ pickup.pickupWindowDays|default(2) }}</strong> days.</p>
 <h3>Store</h3>
-<p>{% if config.storeName %}<strong>{{ config.storeName }}</strong><br/>{% endif %}
-{% if config.storeAddress %}{{ config.storeAddress|nl2br }}<br/>{% endif %}
-{% if config.openingHours %}<em>Opening hours:</em><br/>{{ config.openingHours|nl2br }}{% endif %}</p>
+<p>{% if pickup.storeName|default('') %}<strong>{{ pickup.storeName }}</strong><br/>{% endif %}
+{% if pickup.storeAddress|default('') %}{{ pickup.storeAddress|nl2br }}<br/>{% endif %}
+{% if pickup.openingHours|default('') %}<em>Opening hours:</em><br/>{{ pickup.openingHours|nl2br }}{% endif %}</p>
 <hr/>
 <p style="color:#666; font-size:12px;">This email was generated automatically by the Click & Collect plugin.</p>
 HTML;
@@ -187,7 +218,7 @@ HTML;
         $textEn = <<<TEXT
 Hello team,
 
-A new Click & Collect order #{{ orderNumber }} has been placed and is marked for in-store pickup.
+A new Click & Collect order #{{ order.orderNumber }} has been placed and is marked for in-store pickup.
 
 Customer:
 {% set customer = order.orderCustomer %}{% if customer %}{{ customer.firstName }} {{ customer.lastName }} / {{ customer.email }}{% else %}–{% endif %}
@@ -197,26 +228,37 @@ Items:
 {% endfor %}
 Total: {{ order.amountTotal|number_format(2, '.', ',') }} €
 
+{% set pickupDelivery = order.deliveries|first %}
+{% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
+{% set fallbackPickup = clickCollectPickup|default({}) %}
+{% set pickup = {
+  'storeName': pickupFields.foerde_click_collect_store_name|default(fallbackPickup.storeName|default('')),
+  'storeAddress': pickupFields.foerde_click_collect_store_address|default(fallbackPickup.storeAddress|default('')),
+  'openingHours': pickupFields.foerde_click_collect_opening_hours|default(fallbackPickup.openingHours|default('')),
+  'pickupWindowDays': pickupFields.foerde_click_collect_pickup_window_days|default(fallbackPickup.pickupWindowDays|default(2)),
+  'pickupPreparationHours': pickupFields.foerde_click_collect_pickup_preparation_hours|default(fallbackPickup.pickupPreparationHours|default(4))
+} %}
+
 Pickup details:
-- Preparation: {{ config.pickupPreparationHours }} hours
-- Pickup window: {{ config.pickupWindowDays }} days
+- Preparation: {{ pickup.pickupPreparationHours|default(4) }} hours
+- Pickup window: {{ pickup.pickupWindowDays|default(2) }} days
 
 Store:
-{% if config.storeName %}{{ config.storeName }}
-{% endif %}{% if config.storeAddress %}{{ config.storeAddress }}
-{% endif %}{% if config.openingHours %}Opening hours:
-{{ config.openingHours }}
+{% if pickup.storeName|default('') %}{{ pickup.storeName }}
+{% endif %}{% if pickup.storeAddress|default('') %}{{ pickup.storeAddress }}
+{% endif %}{% if pickup.openingHours|default('') %}Opening hours:
+{{ pickup.openingHours }}
 {% endif %}
 
 This email was generated automatically by the Click & Collect plugin.
 TEXT;
 
-        $this->upsertTemplateTranslation($connection, $templateId, $defaultLanguageId, 'New Click & Collect order #{{ orderNumber }}', $htmlEn, $textEn, $now);
+    $this->upsertTemplateTranslation($connection, $templateId, $defaultLanguageId, 'New Click & Collect order #{{ order.orderNumber }}', $htmlEn, $textEn, $now);
         if ($enLanguageId && $enLanguageId !== $defaultLanguageId) {
-            $this->upsertTemplateTranslation($connection, $templateId, $enLanguageId, 'New Click & Collect order #{{ orderNumber }}', $htmlEn, $textEn, $now);
+      $this->upsertTemplateTranslation($connection, $templateId, $enLanguageId, 'New Click & Collect order #{{ order.orderNumber }}', $htmlEn, $textEn, $now);
         }
         if ($deLanguageId) {
-            $this->upsertTemplateTranslation($connection, $templateId, $deLanguageId, 'Neue Click & Collect Bestellung #{{ orderNumber }}', $htmlDe, $textDe, $now);
+      $this->upsertTemplateTranslation($connection, $templateId, $deLanguageId, 'Neue Click & Collect Bestellung #{{ order.orderNumber }}', $htmlDe, $textDe, $now);
         }
     }
 
