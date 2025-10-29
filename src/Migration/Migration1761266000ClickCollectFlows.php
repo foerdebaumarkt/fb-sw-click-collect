@@ -403,4 +403,16 @@ class Migration1761266000ClickCollectFlows extends MigrationStep
         ];
     }
 
+    private function hexToBytes(string $value): string
+    {
+        if (\strlen($value) === 16) {
+            return $value;
+        }
+
+        if (\preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
+            return Uuid::fromHexToBytes($value);
+        }
+
+        throw new \RuntimeException('Invalid UUID value supplied.');
+    }
 }
