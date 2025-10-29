@@ -254,6 +254,8 @@ class Migration1761266000ClickCollectFlows extends MigrationStep
             'customFields' => null,
         ], JSON_THROW_ON_ERROR);
 
+        $templateName = 'Foerde Click & Collect pickup reminder';
+
         $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
 
         $existingId = $connection->fetchOne(
@@ -262,13 +264,18 @@ class Migration1761266000ClickCollectFlows extends MigrationStep
         );
 
         if (\is_string($existingId) && $existingId !== '') {
-            $connection->update('flow_template', ['config' => $config, 'updated_at' => $now], ['id' => $existingId]);
+            $connection->update('flow_template', [
+                'config' => $config,
+                'name' => $templateName,
+                'updated_at' => $now,
+            ], ['id' => $existingId]);
 
             return;
         }
 
         $connection->insert('flow_template', [
             'id' => $this->hexToBytes('4d9e2c68d3be4a0eb8582fb6f3bd3c66'),
+            'name' => $templateName,
             'config' => $config,
             'created_at' => $now,
         ]);
