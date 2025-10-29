@@ -72,7 +72,7 @@ jobs:
           docker exec shopware-test bash -lc "cd /var/www/html && rm -rf custom/plugins/${PLUGIN_NAME} && unzip -q /tmp/${PLUGIN_NAME}.zip -d custom/plugins"
           docker exec shopware-test bash -lc "cd /var/www/html && php bin/console plugin:refresh"
           docker exec shopware-test bash -lc "cd /var/www/html && php bin/console plugin:install --activate ${PLUGIN_NAME}"
-          docker exec shopware-test bash -lc "cd /var/www/html && php bin/console plugin:list --format=json" | jq '.[] | select(.name == "'"${PLUGIN_NAME}"'")'
+          docker exec shopware-test bash -lc "cd /var/www/html && php bin/console plugin:list --json" | jq '.[] | select(.name == "'"${PLUGIN_NAME}"'")'
 
       - name: Run basic diagnostics
         run: |
