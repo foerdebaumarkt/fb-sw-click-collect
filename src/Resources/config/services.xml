@@ -23,9 +23,6 @@
             <argument type="service" id="order.repository"/>
             <argument type="service" id="order_delivery.repository"/>
         </service>
-        <service id="FoerdeClickCollect\EventSubscriber\OrderDeliveryReadySubscriber">
-            <tag name="kernel.event_subscriber"/>
-        </service>
         <service id="FoerdeClickCollect\EventSubscriber\OrderConfirmationMailSubscriber">
             <tag name="kernel.event_subscriber"/>
         </service>
