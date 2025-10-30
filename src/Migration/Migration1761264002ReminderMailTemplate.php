@@ -59,102 +59,102 @@ class Migration1761264002ReminderMailTemplate extends MigrationStep
 
         // Upsert translations (DE/EN)
         $this->upsertTemplateTranslation($connection, $templateId, 'de-DE',
-            'Erinnerung: Bitte holen Sie Ihre Bestellung #{{ orderNumber }} ab',
+            'Erinnerung: Bitte holen Sie Ihre Bestellung #{{ order.orderNumber }} ab',
             <<<'HTML'
 {% set customer = customer|default(order.orderCustomer) %}
 {% set pickupDelivery = order.deliveries|first %}
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
-{% set config = {
-    'storeName': pickupFields.fb_click_collect_store_name|default(config.storeName|default('')),
-    'storeAddress': pickupFields.fb_click_collect_store_address|default(config.storeAddress|default('')),
-    'openingHours': pickupFields.fb_click_collect_opening_hours|default(config.openingHours|default('')),
-    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+{% set pickup = {
+    'storeName': pickupFields.fb_click_collect_store_name|default(''),
+    'storeAddress': pickupFields.fb_click_collect_store_address|default(''),
+    'openingHours': pickupFields.fb_click_collect_opening_hours|default(''),
+    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(2)
 } %}
 <p>Hallo {{ customer.firstName|default('') }} {{ customer.lastName|default('') }},</p>
-<p>Ihre Click & Collect Bestellung <strong>#{{ orderNumber }}</strong> ist abholbereit.</p>
-<p>Bitte holen Sie Ihre Bestellung innerhalb von <strong>{{ config.pickupWindowDays|default(2) }}</strong> Tagen ab.</p>
-<p><strong>Abholung</strong><br/>{{ config.storeName|default('Ihr Markt') }}<br/>{{ config.storeAddress|nl2br }}{% if config.openingHours is defined and config.openingHours %}<br/><em>Öffnungszeiten:</em><br/>{{ config.openingHours|nl2br }}{% endif %}</p>
+<p>Ihre Click & Collect Bestellung <strong>#{{ order.orderNumber }}</strong> ist abholbereit.</p>
+<p>Bitte holen Sie Ihre Bestellung innerhalb von <strong>{{ pickup.pickupWindowDays }}</strong> Tagen ab.</p>
+<p><strong>Abholung</strong><br/>{{ pickup.storeName|default('Ihr Markt') }}{% if pickup.storeAddress %}<br/>{{ pickup.storeAddress|nl2br }}{% endif %}{% if pickup.openingHours %}<br/><em>Öffnungszeiten:</em><br/>{{ pickup.openingHours|nl2br }}{% endif %}</p>
 <p>Zur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.</p>
-<p>Vielen Dank!<br/>Ihr Förde Baumarkt Team</p>
+<p>Vielen Dank!<br/>Ihr Baumarkt Team</p>
 HTML,
             <<<'PLAIN'
 {% set customer = customer|default(order.orderCustomer) %}
 {% set pickupDelivery = order.deliveries|first %}
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
-{% set config = {
-    'storeName': pickupFields.fb_click_collect_store_name|default(config.storeName|default('')),
-    'storeAddress': pickupFields.fb_click_collect_store_address|default(config.storeAddress|default('')),
-    'openingHours': pickupFields.fb_click_collect_opening_hours|default(config.openingHours|default('')),
-    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+{% set pickup = {
+    'storeName': pickupFields.fb_click_collect_store_name|default(''),
+    'storeAddress': pickupFields.fb_click_collect_store_address|default(''),
+    'openingHours': pickupFields.fb_click_collect_opening_hours|default(''),
+    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(2)
 } %}
 Hallo {{ customer.firstName|default('') }} {{ customer.lastName|default('') }}
 
-Ihre Click & Collect Bestellung #{{ orderNumber }} ist abholbereit.
+Ihre Click & Collect Bestellung #{{ order.orderNumber }} ist abholbereit.
 
-Bitte holen Sie Ihre Bestellung innerhalb von {{ config.pickupWindowDays|default(2) }} Tagen ab.
+Bitte holen Sie Ihre Bestellung innerhalb von {{ pickup.pickupWindowDays }} Tagen ab.
 
 Abholung:
-{{ config.storeName|default('Ihr Markt') }}
-{{ config.storeAddress }}
-{% if config.openingHours is defined and config.openingHours %}
+{{ pickup.storeName|default('Ihr Markt') }}
+{{ pickup.storeAddress }}
+{% if pickup.openingHours %}
 Öffnungszeiten:
-{{ config.openingHours }}
+{{ pickup.openingHours }}
 {% endif %}
 
 Zur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.
 
 Vielen Dank!
-Ihr Förde Baumarkt Team
+Ihr Baumarkt Team
 PLAIN
         );
 
         $this->upsertTemplateTranslation($connection, $templateId, 'en-GB',
-            'Reminder: Please pick up your order #{{ orderNumber }}',
+            'Reminder: Please pick up your order #{{ order.orderNumber }}',
             <<<'HTML'
 {% set customer = customer|default(order.orderCustomer) %}
 {% set pickupDelivery = order.deliveries|first %}
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
-{% set config = {
-    'storeName': pickupFields.fb_click_collect_store_name|default(config.storeName|default('')),
-    'storeAddress': pickupFields.fb_click_collect_store_address|default(config.storeAddress|default('')),
-    'openingHours': pickupFields.fb_click_collect_opening_hours|default(config.openingHours|default('')),
-    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+{% set pickup = {
+    'storeName': pickupFields.fb_click_collect_store_name|default(''),
+    'storeAddress': pickupFields.fb_click_collect_store_address|default(''),
+    'openingHours': pickupFields.fb_click_collect_opening_hours|default(''),
+    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(2)
 } %}
 <p>Hello {{ customer.firstName|default('') }} {{ customer.lastName|default('') }},</p>
-<p>Your Click & Collect order <strong>#{{ orderNumber }}</strong> is ready for pickup.</p>
-<p>Please collect your order within <strong>{{ config.pickupWindowDays|default(2) }}</strong> days.</p>
-<p><strong>Pickup</strong><br/>{{ config.storeName|default('Your store') }}<br/>{{ config.storeAddress|nl2br }}{% if config.openingHours is defined and config.openingHours %}<br/><em>Opening hours:</em><br/>{{ config.openingHours|nl2br }}{% endif %}</p>
+<p>Your Click & Collect order <strong>#{{ order.orderNumber }}</strong> is ready for pickup.</p>
+<p>Please collect your order within <strong>{{ pickup.pickupWindowDays }}</strong> days.</p>
+<p><strong>Pickup</strong><br/>{{ pickup.storeName|default('Your store') }}{% if pickup.storeAddress %}<br/>{{ pickup.storeAddress|nl2br }}{% endif %}{% if pickup.openingHours %}<br/><em>Opening hours:</em><br/>{{ pickup.openingHours|nl2br }}{% endif %}</p>
 <p>Stating your name is sufficient; payment happens in store.</p>
-<p>Thank you!<br/>Your Foerde Baumarkt team</p>
+<p>Thank you!<br/>Your Baumarkt team</p>
 HTML,
             <<<'PLAIN'
 {% set customer = customer|default(order.orderCustomer) %}
 {% set pickupDelivery = order.deliveries|first %}
 {% set pickupFields = pickupDelivery ? pickupDelivery.customFields|default({}) : {} %}
-{% set config = {
-    'storeName': pickupFields.fb_click_collect_store_name|default(config.storeName|default('')),
-    'storeAddress': pickupFields.fb_click_collect_store_address|default(config.storeAddress|default('')),
-    'openingHours': pickupFields.fb_click_collect_opening_hours|default(config.openingHours|default('')),
-    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(config.pickupWindowDays|default(2))
+{% set pickup = {
+    'storeName': pickupFields.fb_click_collect_store_name|default(''),
+    'storeAddress': pickupFields.fb_click_collect_store_address|default(''),
+    'openingHours': pickupFields.fb_click_collect_opening_hours|default(''),
+    'pickupWindowDays': pickupFields.fb_click_collect_pickup_window_days|default(2)
 } %}
 Hello {{ customer.firstName|default('') }} {{ customer.lastName|default('') }}
 
-Your Click & Collect order #{{ orderNumber }} is ready for pickup.
+Your Click & Collect order #{{ order.orderNumber }} is ready for pickup.
 
-Please collect your order within {{ config.pickupWindowDays|default(2) }} days.
+Please collect your order within {{ pickup.pickupWindowDays }} days.
 
 Pickup:
-{{ config.storeName|default('Your store') }}
-{{ config.storeAddress }}
-{% if config.openingHours is defined and config.openingHours %}
+{{ pickup.storeName|default('Your store') }}
+{{ pickup.storeAddress }}
+{% if pickup.openingHours %}
 Opening hours:
-{{ config.openingHours }}
+{{ pickup.openingHours }}
 {% endif %}
 
 Stating your name is sufficient; payment happens in store.
 
 Thank you!
-Your Foerde Baumarkt team
+Your Baumarkt team
 PLAIN
         );
     }

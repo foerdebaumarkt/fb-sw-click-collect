@@ -80,7 +80,7 @@ class Migration1761264003OrderConfirmationMailTemplate extends MigrationStep
 {% if pickup.openingHours|default('') %}<p><em>Öffnungszeiten:</em><br/>{{ pickup.openingHours|nl2br }}</p>{% endif %}
 <p>Abholfenster: {{ pickup.pickupWindowDays|default(2) }} Tage - Vorbereitung: ca. {{ pickup.pickupPreparationHours|default(4) }} Stunden.</p>
 <p>Eine Übersicht Ihrer Bestellung finden Sie jederzeit im Kundenkonto.</p>
-<p>Ihr Förde Baumarkt Team</p>
+<p>Ihr Baumarkt Team</p>
 HTML,
         <<<PLAIN
 {% set pickupDelivery = order.deliveries|first %}
@@ -112,7 +112,7 @@ Vorbereitung: ca. {{ pickup.pickupPreparationHours|default(4) }} Stunden
 
 Sie finden Ihre Bestellung jederzeit im Kundenkonto.
 
-Ihr Förde Baumarkt Team
+Ihr Baumarkt Team
 PLAIN
     );
 
@@ -136,7 +136,7 @@ PLAIN
 {% if pickup.openingHours|default('') %}<p><em>Opening hours:</em><br/>{{ pickup.openingHours|nl2br }}</p>{% endif %}
 <p>Pickup window: {{ pickup.pickupWindowDays|default(2) }} days - Preparation time: approx. {{ pickup.pickupPreparationHours|default(4) }} hours.</p>
 <p>You can review your order details in your customer account at any time.</p>
-<p>Your Förde Baumarkt Team</p>
+<p>Your Baumarkt Team</p>
 HTML,
         <<<PLAIN
 {% set pickupDelivery = order.deliveries|first %}
@@ -168,7 +168,7 @@ Preparation time: approx. {{ pickup.pickupPreparationHours|default(4) }} hours
 
 You can view your order anytime in your customer account.
 
-Your Förde Baumarkt Team
+Your Baumarkt Team
 PLAIN
     );
     }

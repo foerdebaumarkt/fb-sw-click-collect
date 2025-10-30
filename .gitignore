@@ -1,5 +1,40 @@
+/vendor/
 node_modules/
-dist/
+/.idea/
+.vscode/
+.serena/
 .DS_Store
-coverage/
+.phpunit.cache/
+.venv/
+
+# Ignore built Administration assets (Vite output) – generated during build+assets:install
+src/Resources/public/administration/assets/
+src/Resources/public/administration/.vite/
+src/Storefront/Resources/public/administration/.vite/
+
+# Ignore build artifacts (local packaging and temporary staging)
+dist/
+.dist/
+build/
+*.zip
+FbClickCollect.zip
 test-results/
+playwright-report/
+
+# Test coverage outputs
+coverage/
+
+# Ignore temporary caches (e.g., Vite build temp)
+.cache/
+.tmp/
+src/Resources/app/administration/.tmp/
+
+# Ignore Python bytecode, caches, and coverage artifacts
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.py[cod]
+.coverage
+coverage.xml
+htmlcov/

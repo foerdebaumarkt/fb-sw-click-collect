@@ -79,7 +79,7 @@ class Migration1761264000ReadyMailTemplate extends MigrationStep
     <li>Zur Abholung genügt es, Ihren Namen zu nennen; die Bezahlung erfolgt im Markt.</li>
     <li>Bitte holen Sie die Ware innerhalb von <strong>{{ pickup.pickupWindowDays|default(2) }}</strong> Tagen ab.</li>
 </ul>
-<p>Vielen Dank und bis bald!<br/>Ihr Förde Baumarkt Team</p>
+<p>Vielen Dank und bis bald!<br/>Ihr Baumarkt Team</p>
 HTML,
         <<<PLAIN
 {% set orderEntity = order is defined ? order : null %}
@@ -117,7 +117,7 @@ Abholhinweise:
 Bitte holen Sie die Ware innerhalb von {{ pickup.pickupWindowDays|default(2) }} Tagen ab.
 
 Vielen Dank und bis bald!
-Ihr Förde Baumarkt Team
+Ihr Baumarkt Team
 PLAIN
     );
 
@@ -147,7 +147,7 @@ PLAIN
     <li>Stating your name is sufficient; payment happens in store.</li>
     <li>Please collect within <strong>{{ pickup.pickupWindowDays|default(2) }}</strong> days.</li>
 </ul>
-<p>Thank you and see you soon!<br/>Your Foerde Baumarkt team</p>
+<p>Thank you and see you soon!<br/>Your Baumarkt team</p>
 HTML,
         <<<PLAIN
 {% set orderEntity = order is defined ? order : null %}
@@ -184,7 +184,7 @@ Stating your name is sufficient; payment happens in store.
 Please collect within {{ pickup.pickupWindowDays|default(2) }} days.
 
 Thank you and see you soon!
-Your Foerde Baumarkt team
+Your Baumarkt team
 PLAIN
     );
     }
