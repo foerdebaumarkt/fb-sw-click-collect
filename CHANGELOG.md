@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2025-10-31
+
+### Added
+- Proper uninstall cleanup with keepUserData support
+- Staff notification mail template (Migration1761264001)
+- Documentation for template update workflow (docs/TEMPLATE_UPDATES.md)
+
+### Changed
+- Removed "Förde" branding from customer-facing mail templates (12 signatures updated)
+- Mail templates now use correct Twig syntax (`{{ order.orderNumber }}` instead of `{{ orderNumber }}`)
+- Uninstall now removes mail templates, flows, and system config when "Delete all app data" is checked
+- Order custom field data explicitly preserved during uninstall (permanent business records)
+
+### Fixed
+- Staff mail template uses proper variable scope for order data
+- Uninstall respects UI checkbox for data deletion
+
 ## [0.1.2] - 2025-10-29
 
 - Migrations cleanup: remove upgrade-only migrations and assume fresh-install-only policy.
