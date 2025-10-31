@@ -44,9 +44,11 @@ This plugin does **NOT** automatically update mail templates on plugin updates t
    - Login to Shopware Admin
    - Navigate to: Extensions → My Extensions
    - Click: "..." → "Uninstall" on FbClickCollect
-   - **⚠️ IMPORTANT**: Check "Delete all app data" checkbox
+   - **⚠️ CRITICAL**: Check "Delete all app data" checkbox during Uninstall
+     - This checkbox only works at **Uninstall** step, not Remove
+     - If you skip this, data will remain orphaned in database
    - Click "Uninstall"
-   
+
 6. **Reinstall plugin**
    - Click "Upload extension"
    - Select new `FbClickCollect.zip`
@@ -64,7 +66,7 @@ This plugin does **NOT** automatically update mail templates on plugin updates t
 
 ### What Gets Removed on Uninstall
 
-When you check "Delete all app data":
+When you check "Delete all app data" **during Uninstall**:
 
 **Removed:**
 - ❌ Mail templates (all 4 types)
@@ -76,6 +78,22 @@ When you check "Delete all app data":
 - ✅ Custom field data in orders (JSON values persist)
 - ✅ Shipping method (Click & Collect)
 - ✅ Payment method settings
+
+### ⚠️ Common Mistake: Uninstall vs Remove
+
+**Correct workflow for clean reinstall:**
+```
+1. Uninstall with ☑️ "Delete all app data"  ← Data cleaned here
+2. Install new version                       ← Fresh templates
+```
+
+**Incorrect workflow (leaves orphaned data):**
+```
+1. Uninstall with ☐ Keep data                ← Data stays
+2. Remove with ☑️ "Delete data permanently"  ← Too late! Plugin already gone
+```
+
+**Why?** The "Delete data" checkbox at **Remove** only affects Shopware's plugin metadata, not your custom data. By that point, the plugin code is already deleted and cannot clean up. Always check the box during **Uninstall**, not Remove.
 
 ### Alternative: Manual Template Edit
 
