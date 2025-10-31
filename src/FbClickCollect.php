@@ -54,7 +54,59 @@ class FbClickCollect extends Plugin
     public function uninstall(UninstallContext $uninstallContext): void
     {
         parent::uninstall($uninstallContext);
-        // Keep data to avoid breaking orders/history. No hard delete here.
+
+        // Respect user's choice from UI checkbox
+        if ($uninstallContext->keepUserData()) {
+            return;
+        }
+
+        // User chose "Delete all app data" - clean up everything
+        $this->cleanupPluginData($uninstallContext->getContext());
+    }
+
+    private function cleanupPluginData(Context $context): void
+    {
+        $connection = $this->container->get(\Doctrine\DBAL\Connection::class);
+
+        // Remove mail templates (cascades to translations via foreign key)
+        $connection->executeStatement("
+            DELETE mt FROM mail_template mt
+            JOIN mail_template_type mtt ON mt.mail_template_type_id = mtt.id
+            WHERE mtt.technical_name IN (
+                'fb_click_collect.order_placed',
+                'fb_click_collect.ready',
+                'fb_click_collect.reminder',
+                'fb_click_collect.staff_order_placed'
+            )
+        ");
+
+        // Remove mail template types
+        $connection->executeStatement("
+            DELETE FROM mail_template_type
+            WHERE technical_name IN (
+                'fb_click_collect.order_placed',
+                'fb_click_collect.ready',
+                'fb_click_collect.reminder',
+                'fb_click_collect.staff_order_placed'
+            )
+        ");
+
+        // Remove flows
+        $connection->executeStatement("
+            DELETE FROM flow
+            WHERE name = 'Click & Collect order confirmation'
+        ");
+
+        // Remove system config
+        $connection->executeStatement("
+            DELETE FROM system_config
+            WHERE configuration_key LIKE 'FbClickCollect.config.%'
+        ");
+
+        // Note: We do NOT remove custom field data from existing orders
+        // - Order data is permanent business records
+        // - Custom field definitions can be removed, but JSON data in orders persists
+        // - This preserves historical integrity and audit trail
     }
 
     public function getMigrationNamespace(): string
