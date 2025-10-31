@@ -16,13 +16,24 @@ class Migration1761264001StaffMailTemplate extends MigrationStep
 
     public function update(Connection $connection): void
     {
+        $technicalName = 'fb_click_collect.staff_order_placed';
+
+        // Check if mail template type already exists (legacy from Foerdebaumarkt plugin)
+        $existingTypeId = $connection->fetchOne(
+            'SELECT id FROM mail_template_type WHERE technical_name = :name',
+            ['name' => $technicalName]
+        );
+
+        if ($existingTypeId) {
+            // Template type already exists (legacy data), skip creation
+            return;
+        }
+
         $typeId = Uuid::randomBytes();
         $templateId = Uuid::randomBytes();
         $langEn = Uuid::fromHexToBytes(Defaults::LANGUAGE_SYSTEM);
         $langDeHex = $this->getLanguageId($connection, 'de-DE');
         $langDe = $langDeHex ? Uuid::fromHexToBytes($langDeHex) : $langEn;
-
-        $technicalName = 'fb_click_collect.staff_order_placed';
 
         // Create mail template type
         $connection->insert('mail_template_type', [
