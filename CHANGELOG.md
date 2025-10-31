@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2025-10-31
+
+### Fixed
+- Staff mail template migration now idempotent (skips if type already exists)
+- Prevents "Duplicate entry" error when legacy data exists from Foerdebaumarkt plugin
+
 ## [0.1.3] - 2025-10-31
 
 ### Added
