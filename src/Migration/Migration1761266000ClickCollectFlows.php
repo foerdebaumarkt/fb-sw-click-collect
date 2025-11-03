@@ -111,11 +111,22 @@ class Migration1761266000ClickCollectFlows extends MigrationStep
         $storeEmail = $this->getConfigString($connection, 'FbClickCollect.config.storeEmail');
         $storeName = $this->getConfigString($connection, 'FbClickCollect.config.storeName');
 
-        // Require explicit plugin config values; do not fall back to Twig expressions or core defaults.
+        // Fallback to Shopware admin email/company if store email not configured
         $staffRecipientEmail = is_string($storeEmail) && strpos($storeEmail, '@') !== false ? trim($storeEmail) : '';
         $staffRecipientName = is_string($storeName) && $storeName !== '' ? trim($storeName) : '';
 
-        if ($staffRecipientEmail !== '' && $staffRecipientName !== '') {
+        if ($staffRecipientEmail === '') {
+            $adminEmail = $this->getConfigString($connection, 'core.basicInformation.email');
+            $staffRecipientEmail = is_string($adminEmail) && strpos($adminEmail, '@') !== false ? trim($adminEmail) : '';
+        }
+
+        if ($staffRecipientName === '') {
+            $adminCompany = $this->getConfigString($connection, 'core.basicInformation.shopName');
+            $staffRecipientName = is_string($adminCompany) && $adminCompany !== '' ? trim($adminCompany) : ($staffRecipientEmail !== '' ? $staffRecipientEmail : 'Staff');
+        }
+
+        // Always create staff mail action (with fallbacks ensuring we have a recipient)
+        if ($staffRecipientEmail !== '') {
             $this->insertSequence($connection, [
                 'id' => $staffSequenceId,
                 'flow_id' => $flowId,
