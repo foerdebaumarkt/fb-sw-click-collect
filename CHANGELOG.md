@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.7] - 2025-11-03
+
+### Added
+- Dynamic staff flow recipient updates when store email or store name configuration changes
+- Automatic synchronization of staff mail sequence with plugin configuration
+- Real-time flow updates without requiring plugin reinstall or manual flow editing
+
+### Changed
+- SystemConfigSubscriber now monitors storeEmail and storeName config changes
+- Staff mail recipient automatically updated with same fallback logic as migration
+
 ## [0.1.6] - 2025-11-03
 
 ### Added

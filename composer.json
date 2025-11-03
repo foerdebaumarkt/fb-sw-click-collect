@@ -2,7 +2,7 @@
     "name": "fb/click-collect",
     "description": "Shopware 6 plugin delivering flexible click & collect capabilities for omnichannel retailers.",
     "type": "shopware-platform-plugin",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "license": "proprietary",
     "authors": [
         {
