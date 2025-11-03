@@ -41,16 +41,20 @@ class Migration1761264400StaffMailTemplate extends MigrationStep
                 'available_entities' => $availableEntities,
                 'created_at' => $now,
             ]);
-
-            $this->insertTypeTranslation($connection, $typeId, $defaultLanguageId, 'Click & Collect: Staff notification', $now);
-            if ($enLanguageId && $enLanguageId !== $defaultLanguageId) {
-                $this->insertTypeTranslation($connection, $typeId, $enLanguageId, 'Click & Collect: Staff notification', $now);
-            }
-            if ($deLanguageId) {
-                $this->insertTypeTranslation($connection, $typeId, $deLanguageId, 'Click & Collect: Team-Benachrichtigung', $now);
-            }
         } elseif (\is_string($typeId) && \preg_match('/^[0-9a-f]{32}$/i', $typeId)) {
             $typeId = \hex2bin($typeId);
+        }
+
+        // Upsert translations (always update to ensure correct German text)
+        if ($deLanguageId) {
+            $this->upsertTypeTranslation($connection, $typeId, $deLanguageId, 'Click & Collect: Team-Benachrichtigung', $now);
+        }
+        if ($enLanguageId) {
+            $this->upsertTypeTranslation($connection, $typeId, $enLanguageId, 'Click & Collect: Staff notification', $now);
+        }
+        // Fallback for system default if it's neither de nor en
+        if ($defaultLanguageId !== $deLanguageId && $defaultLanguageId !== $enLanguageId) {
+            $this->upsertTypeTranslation($connection, $typeId, $defaultLanguageId, 'Click & Collect: Staff notification', $now);
         }
 
         $templateId = $connection->fetchOne('SELECT id FROM mail_template WHERE mail_template_type_id = :typeId ORDER BY created_at ASC LIMIT 1', [
@@ -286,14 +290,28 @@ TEXT;
         return \is_string($languageId) ? $languageId : null;
     }
 
-    private function insertTypeTranslation(Connection $connection, string $typeId, string $languageId, string $name, string $createdAt): void
+    private function upsertTypeTranslation(Connection $connection, string $typeId, string $languageId, string $name, string $createdAt): void
     {
-        $connection->insert('mail_template_type_translation', [
-            'mail_template_type_id' => $typeId,
-            'language_id' => $languageId,
-            'name' => $name,
-            'created_at' => $createdAt,
-        ]);
+        $exists = $connection->fetchOne(
+            'SELECT 1 FROM mail_template_type_translation WHERE mail_template_type_id = :tid AND language_id = :lid',
+            ['tid' => $typeId, 'lid' => $languageId]
+        );
+
+        if ($exists) {
+            $connection->update('mail_template_type_translation', [
+                'name' => $name,
+            ], [
+                'mail_template_type_id' => $typeId,
+                'language_id' => $languageId,
+            ]);
+        } else {
+            $connection->insert('mail_template_type_translation', [
+                'mail_template_type_id' => $typeId,
+                'language_id' => $languageId,
+                'name' => $name,
+                'created_at' => $createdAt,
+            ]);
+        }
     }
 
     private function upsertTemplateTranslation(Connection $connection, string $templateId, string $languageId, string $subject, string $html, string $plain, string $createdAt): void

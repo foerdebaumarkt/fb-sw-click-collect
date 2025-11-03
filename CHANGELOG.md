@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2025-11-03
+
+### Fixed
+- Staff mail template migration now fully idempotent with upsert logic
+- Translation insertions replaced with upserts to handle both fresh installs and updates
+- Ensures German translation is always correct even if type already exists
+
 ## [0.1.4] - 2025-10-31
 
 ### Fixed
