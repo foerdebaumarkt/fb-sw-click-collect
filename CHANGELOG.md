@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2025-11-03
+
+### Added
+- Unique plugin icon design with location pin, shopping bag, and checkmark
+- SVG source file for icon modifications (design/plugin-icon.svg)
+
+### Fixed
+- Staff mail action now always created in order confirmation flow
+- Added fallback to core.basicInformation.email when storeEmail not configured
+- Added fallback to core.basicInformation.shopName when storeName not configured
+- Ensures staff notifications sent even without plugin configuration
+
 ## [0.1.5] - 2025-11-03
 
 ### Fixed
