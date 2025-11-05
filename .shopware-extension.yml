@@ -1,0 +1,10 @@
+type: plugin
+path: .
+build:
+  zip:
+    assets:
+      after_hooks:
+        - "rm -rf .vscode .markdownlint.json docs design plan.md README.md package.json package-lock.json"
+    ignore:
+      - "node_modules"
+      - "node_modules/**"
