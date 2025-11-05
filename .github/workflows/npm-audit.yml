@@ -1,0 +1,51 @@
+name: npm audit
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Check npm dependencies for vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: |
+          set -euo pipefail
+          echo "Running npm audit..."
+          if npm audit --audit-level=moderate; then
+            echo "✅ No vulnerabilities found"
+          else
+            echo "❌ Vulnerabilities detected"
+            echo ""
+            echo "To fix locally, run:"
+            echo "  npm audit fix"
+            echo ""
+            echo "For more details:"
+            echo "  npm audit"
+            exit 1
+          fi
+
+      - name: Check for outdated packages
+        run: |
+          echo "Checking for outdated packages (informational)..."
+          npm outdated || true
